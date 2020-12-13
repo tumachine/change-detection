@@ -4,6 +4,7 @@ import { TreeNode } from './tree/tree-node';
 type UpdateTree = (foundNode: TreeNode) => void;
 
 export interface TreeState {
+  node: TreeNode;
   depth: number;
 }
 
@@ -11,11 +12,11 @@ export interface TreeState {
   providedIn: 'root'
 })
 export class NodeService {
-  node!: TreeNode;
   currentNode: TreeNode | null = null;
 
   treeState: TreeState = {
-    depth: 4
+    depth: 4,
+    node: this.createFirstNode(),
   };
 
   prevCurrentNode!: TreeNode | null;
@@ -43,7 +44,7 @@ export class NodeService {
 
   updateDepth(): void {
     const depths: number[] = [];
-    this.getNodeDepths(this.node, depths);
+    this.getNodeDepths(this.treeState.node, depths);
     this.treeState = { ...this.treeState, depth: Math.max(...depths) };
   }
 
@@ -68,12 +69,12 @@ export class NodeService {
   }
 
   updateNodeTree(node: TreeNode, updateTreeFn: UpdateTree): void {
-    const treeCopy = this.copyNode(this.node);
+    const treeCopy = this.copyNode(this.treeState.node);
     const foundNode = this.findNode(treeCopy, node);
     if (foundNode) {
       updateTreeFn(foundNode);
       this.currentNode = foundNode;
-      this.node = treeCopy;
+      this.treeState.node = treeCopy;
     }
   }
 
@@ -88,7 +89,7 @@ export class NodeService {
   autogenerateNodes(depth: number, node: TreeNode, childrenNum: number): void {
     const generatedNode = this.generateNodes(depth, node, childrenNum);
 
-    this.node = generatedNode;
+    this.treeState.node = generatedNode;
     this.currentNode = generatedNode;
     this.treeState = { ...this.treeState, depth };
   }

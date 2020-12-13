@@ -15,10 +15,6 @@ export class AppComponent implements OnInit {
     return this.nodeService.currentNode;
   }
 
-  get node(): TreeNode {
-    return this.nodeService.node;
-  }
-
   get treeState(): TreeState {
     return this.nodeService.treeState;
   }

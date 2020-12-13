@@ -22,9 +22,6 @@ export class TreeComponent implements AfterViewInit {
   height!: number;
 
   @Input()
-  node!: TreeNode;
-
-  @Input()
   set treeState(ts: TreeState) {
     this.ts = ts;
     this.calculateStyling();
