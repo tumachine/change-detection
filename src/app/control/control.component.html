@@ -1,6 +1,8 @@
 <div class="control-container">
   <div class="control-node-info" *ngIf="currentNode">
     <div>{{ currentNode.path }}</div>
+    <button (click)="addNode.emit(currentNode)">Add</button>
+    <button (click)="removeNode.emit(currentNode)">Remove</button>
   </div>
 </div>
 

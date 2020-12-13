@@ -1,16 +1,23 @@
 import { Injectable } from '@angular/core';
 import { TreeNode } from './tree/tree-node';
-import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
-import { shareReplay, tap } from 'rxjs/operators';
+
+type UpdateTree = (foundNode: TreeNode) => void;
+
+export interface TreeState {
+  depth: number;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  nodes: TreeNode[] = [];
+  node!: TreeNode;
   currentNode: TreeNode | null = null;
 
-  depth = 4;
+  treeState: TreeState = {
+    depth: 4
+  };
+
   prevCurrentNode!: TreeNode | null;
   history: string[] = [];
 
@@ -23,133 +30,93 @@ export class NodeService {
     this.history = [];
   }
 
-  currentNodeNext(node: TreeNode): void {
-    // create new node
-    // generate same array
-    const treeCopy = [this.copyNode(this.nodes[0])];
-    const foundNode = this.findNode(treeCopy[0], node);
-    if (foundNode) {
-      if (!this.prevCurrentNode) {
-        this.prevCurrentNode = foundNode;
-        foundNode.active = true;
-      } else {
-        this.prevCurrentNode.active = false;
-        foundNode.active = true;
-        this.prevCurrentNode = foundNode;
-      }
-      this.currentNode = foundNode;
-      this.nodes = treeCopy;
-    }
-  }
-
-  copyNode(node: TreeNode): TreeNode {
-    const copyOfNode = this.createNode(node.path, node.parent);
-    node.children.forEach(n => copyOfNode.children.push(this.copyNode(n)));
-    return copyOfNode;
-  }
-
-  findNode(parent: TreeNode, node: TreeNode): TreeNode | null {
-    if (parent.path.length === node.path.length) {
-      return node;
-    }
-
-    if (parent.path.length > node.path.length) {
-      return null;
-    }
-
-    let children = parent.children;
-    for (let i = parent.path.length; i < node.path.length - 1; i++) {
-      children = children[node.path[i]].children;
-    }
-    return children[node.path[node.path.length - 1]];
-  }
-
-
-  walkOverNodeChildren(operation: (n: TreeNode) => void, nodes: TreeNode[]): void {
-    nodes.forEach(n => {
-      operation(n);
-      this.walkOverNodeChildren(operation, n.children);
-    });
-  }
-
-  createNode(path: number[], parent: TreeNode | null, children: TreeNode[] = []): TreeNode {
-    return { path, parent, children, active: false };
-  }
-
-  // always add at end, or at any place?
-  addNode(node: TreeNode, index: number | null = null): void {
-    const newNode = this.createNode([], node);
-    if (index) {
-      node.children.splice(index, 0, newNode);
-      node.path = this.createNodePath(newNode, index);
-      this.nameChildren(node, index);
+  changeCurrentNode: UpdateTree = (foundNode) => {
+    if (!this.prevCurrentNode) {
+      this.prevCurrentNode = foundNode;
+      foundNode.active = true;
     } else {
-      node.children.push(newNode);
-      newNode.path = this.createNodePath(node, node.children.length - 1);
+      this.prevCurrentNode.active = false;
+      foundNode.active = true;
+      this.prevCurrentNode = foundNode;
     }
   }
 
-  removeNode(node: TreeNode): void {
-    if (node.parent) {
-      const nodeIndex = node.parent.children.indexOf(node);
-      node.parent.children = node.parent.children.splice(nodeIndex, 1);
-      this.nameChildren(node.parent, nodeIndex);
+  updateDepth(): void {
+    const depths: number[] = [];
+    this.getNodeDepths(this.node, depths);
+    this.treeState = { ...this.treeState, depth: Math.max(...depths) };
+  }
+
+  addNode(node: TreeNode, updateTable: boolean = false): void {
+    const newNode = this.createNode([], node);
+    if (updateTable) {
+      this.updateNodeTree(node, (foundNode) => this.insertNode(foundNode, newNode));
+    } else {
+      this.insertNode(node, newNode);
     }
   }
 
-  nameChildren(node: TreeNode, from = 0): void {
-    for (let i = from; i < node.children.length; i++) {
-      node.children[i].path = this.createNodePath(node, i);
-      this.nameChildren(node.children[i], 0);
+  insertNode(parent: TreeNode, node: TreeNode, index: number | null = null): void {
+    if (index) {
+      parent.children.splice(index, 0, node);
+      node.path = this.createNodePath(node, index);
+      this.nameChildren(parent, index);
+    } else {
+      parent.children.push(node);
+      node.path = this.createNodePath(parent, parent.children.length - 1);
     }
   }
 
-  checkNode(parent: TreeNode, childIndex: number): boolean {
-    const correctPath = this.createNodePath(parent, childIndex);
-    const correct = this.comparePaths(parent.path, correctPath);
-
-    if (!correct) {
-      console.log(`INCORRECT PATH: ${parent.path[childIndex]}, SHOULD BE: ${correctPath}`);
+  updateNodeTree(node: TreeNode, updateTreeFn: UpdateTree): void {
+    const treeCopy = this.copyNode(this.node);
+    const foundNode = this.findNode(treeCopy, node);
+    if (foundNode) {
+      updateTreeFn(foundNode);
+      this.currentNode = foundNode;
+      this.node = treeCopy;
     }
-    return correct;
   }
 
-  comparePaths(pathOne: number[], pathTwo: number[]): boolean {
-    if (pathOne.length !== pathTwo.length) {
-      return false;
+  removeNode: UpdateTree = (foundNode) => {
+    if (foundNode?.parent) {
+      const nodeIndex = foundNode.parent.children.indexOf(foundNode);
+      foundNode.parent.children.splice(nodeIndex, 1);
+      this.nameChildren(foundNode.parent);
     }
-
-    for (let i = 0; i < pathOne.length; i++) {
-      if (pathOne[i] !== pathTwo[i]) {
-        return false;
-      }
-    }
-    return true;
   }
 
-  checkNodeChildren(node: TreeNode): boolean {
-    for (let i = 0; i < node.children.length; i++) {
-      if (!this.checkNode(node, i) && !this.checkNodeChildren(node.children[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
+  autogenerateNodes(depth: number, node: TreeNode, childrenNum: number): void {
+    const generatedNode = this.generateNodes(depth, node, childrenNum);
 
-  createNodePath(node: TreeNode, index: number): number[] {
-    return node.path.concat(index);
+    this.node = generatedNode;
+    this.currentNode = generatedNode;
+    this.treeState = { ...this.treeState, depth };
   }
 
   createFirstNode(): TreeNode  {
     return this.createNode([0], null);
   }
 
-  autogenerateNodes(depth: number, node: TreeNode, childrenNum: number): void {
-    const generatedNode = this.generateNodes(depth, node, childrenNum);
+  private getNodeDepths(node: TreeNode, depths: number[], d = 1): void {
+    if (node.children.length === 0) {
+      depths.push(d);
+      return;
+    }
+    node.children.forEach(child => this.getNodeDepths(child, depths, d + 1));
+  }
 
-    this.nodes = [generatedNode];
-    this.currentNode = generatedNode;
-    this.depth = depth;
+  private nameChildren(node: TreeNode, from = 0): void {
+    for (let i = from; i < node.children.length; i++) {
+      node.children[i].path = this.createNodePath(node, i);
+      this.nameChildren(node.children[i], 0);
+    }
+  }
+
+  private walkOverNodeChildren(operation: (n: TreeNode) => void, nodes: TreeNode[]): void {
+    nodes.forEach(n => {
+      operation(n);
+      this.walkOverNodeChildren(operation, n.children);
+    });
   }
 
   private generateNodes(depth: number, node: TreeNode, childrenNum: number): TreeNode {
@@ -163,4 +130,67 @@ export class NodeService {
     node.children.forEach(n => this.generateNodes(depth - 1, n, childrenNum));
     return node;
   }
+
+  private copyNode(node: TreeNode, parent: TreeNode | null = null): TreeNode {
+    const copyOfNode = this.createNode(node.path, parent);
+    node.children.forEach(n => copyOfNode.children.push(this.copyNode(n, copyOfNode)));
+    return copyOfNode;
+  }
+
+  private createNode(path: number[], parent: TreeNode | null, children: TreeNode[] = []): TreeNode {
+    return { path, parent, children, active: false };
+  }
+
+  private createNodePath(node: TreeNode, index: number): number[] {
+    return node.path.concat(index);
+  }
+
+  private comparePaths(pathOne: number[], pathTwo: number[]): boolean {
+    if (pathOne.length !== pathTwo.length) {
+      return false;
+    }
+
+    for (let i = 0; i < pathOne.length; i++) {
+      if (pathOne[i] !== pathTwo[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private checkNodeChildren(node: TreeNode): boolean {
+    for (let i = 0; i < node.children.length; i++) {
+      if (!this.checkNode(node, i) || !this.checkNodeChildren(node.children[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private checkNode(parent: TreeNode, childIndex: number): boolean {
+    const correctPath = this.createNodePath(parent, childIndex);
+    const correct = this.comparePaths(parent.path, correctPath);
+
+    if (!correct) {
+      console.error(`INCORRECT PATH: ${parent.path[childIndex]}, SHOULD BE: ${correctPath}`);
+    }
+    return correct;
+  }
+
+  private findNode(parent: TreeNode, node: TreeNode): TreeNode | null {
+    if (parent.path.length === node.path.length) {
+      return parent;
+    }
+
+    if (parent.path.length > node.path.length) {
+      return null;
+    }
+
+    let children = parent.children;
+    for (let i = parent.path.length; i < node.path.length - 1; i++) {
+      children = children[node.path[i]].children;
+    }
+    return children[node.path[node.path.length - 1]];
+  }
+
 }

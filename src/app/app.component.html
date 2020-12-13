@@ -1,4 +1,4 @@
 <div class="main-container">
-  <app-tree [nodes]="nodes"></app-tree>
-  <app-control [currentNode]="currentNode"></app-control>
+  <app-tree [node]="node" [treeState]="treeState"></app-tree>
+  <app-control [currentNode]="currentNode" (addNode)="addNode($event)" (removeNode)="removeNode($event)"></app-control>
 </div>

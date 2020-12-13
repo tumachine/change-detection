@@ -4,11 +4,12 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  HostListener,
-  OnInit,
-  ViewChild
+  HostListener, Input,
+  OnInit, Output,
+  ViewChild,
+  EventEmitter
 } from '@angular/core';
-import { NodeService } from '../node.service';
+import { NodeService, TreeState } from '../node.service';
 import { TreeNode } from './tree-node';
 
 @Component({
@@ -17,12 +18,19 @@ import { TreeNode } from './tree-node';
   styleUrls: ['./tree.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TreeComponent implements OnInit, AfterViewInit {
-  private maxNodeHeight!: number;
+export class TreeComponent implements AfterViewInit {
+  height!: number;
 
-  get nodes(): TreeNode[] {
-    return this.nodeService.nodes;
+  @Input()
+  node!: TreeNode;
+
+  @Input()
+  set treeState(ts: TreeState) {
+    this.ts = ts;
+    this.calculateStyling();
   }
+
+  ts!: TreeState;
 
   @ViewChild('treeContainer')
   treeContainer!: ElementRef<HTMLDivElement>;
@@ -35,27 +43,14 @@ export class TreeComponent implements OnInit, AfterViewInit {
 
   constructor(private nodeService: NodeService, private cdRef: ChangeDetectorRef) {}
 
-  ngOnInit(): void {
-    this.nodeService.autogenerateNodes(4, this.nodeService.createFirstNode(), 2);
-  }
-
   ngAfterViewInit(): void {
     this.calculateStyling();
     this.cdRef.detectChanges();
   }
 
-  get height(): number {
-    return this.maxNodeHeight;
-  }
-
-  set height(h: number) {
-    this.maxNodeHeight = h;
-  }
-
   calculateStyling(): void {
     if (this.treeContainer) {
-      this.height = this.treeContainer.nativeElement.getBoundingClientRect().height / this.nodeService.depth;
-      // console.log(this.maxNodeHeight);
+      this.height = this.treeContainer.nativeElement.getBoundingClientRect().height / this.ts.depth;
     }
   }
 }

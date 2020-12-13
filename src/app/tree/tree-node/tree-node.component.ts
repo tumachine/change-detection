@@ -1,13 +1,11 @@
 import {
   AfterViewInit,
-  ChangeDetectionStrategy,
+  ChangeDetectionStrategy, ChangeDetectorRef,
   Component,
   ElementRef,
   Input,
-  QueryList,
   Renderer2,
   ViewChild,
-  ViewChildren
 } from '@angular/core';
 import { TreeNode } from '../tree-node';
 import { NodeService } from '../../node.service';
@@ -20,10 +18,7 @@ import { NodeService } from '../../node.service';
 })
 export class TreeNodeComponent implements AfterViewInit {
   @Input()
-  nodes: TreeNode[] = [];
-
-  @Input()
-  depth!: number;
+  node!: TreeNode;
 
   @Input()
   set height(h: number) {
@@ -35,36 +30,28 @@ export class TreeNodeComponent implements AfterViewInit {
     return this.elHeight;
   }
 
-  @ViewChildren('nodeEl')
-  nodeEls!: QueryList<ElementRef>;
+  elHeight!: number;
 
   @ViewChild('containerEl')
   containerEl!: ElementRef;
 
-  elHeight!: number;
-
-  constructor(private renderer: Renderer2, private nodeService: NodeService) {}
+  constructor(private renderer: Renderer2, private nodeService: NodeService, private elRef: ElementRef, private cdRef: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
     this.calculateStyling(this.elHeight);
   }
 
-  click(event: MouseEvent, index: number): void {
-    this.nodeService.currentNodeNext(this.nodes[index]);
-    // if (this.nodes) {
-    //   this.nodeService.currentNodeSubject$.next(this.nodes[index]);
-    // }
+  click(event: MouseEvent): void {
+    this.nodeService.updateNodeTree(this.node, this.nodeService.changeCurrentNode);
   }
 
   calculateStyling(height: number): void {
-    if (this.nodeEls && this.containerEl) {
-      this.nodeEls.forEach(({nativeElement}) => {
-        this.renderer.setStyle(nativeElement, 'height', `${this.elHeight}px`);
-      });
+    if (this.elRef) {
+      this.renderer.setStyle(this.elRef.nativeElement, 'height', `${this.elHeight}px`);
+    }
 
-      if (this.depth !== 0) {
-        this.renderer.setStyle(this.containerEl.nativeElement, 'margin-top', `${this.height}px`);
-      }
+    if (this.containerEl) {
+      this.renderer.setStyle(this.containerEl.nativeElement, 'margin-top', `${this.height}px`);
     }
   }
 }
