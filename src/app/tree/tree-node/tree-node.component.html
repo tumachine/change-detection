@@ -1,0 +1,8 @@
+<div class="node-container" #containerEl>
+  <div class="node" #nodeEl *ngFor="let node of nodes; let i = index">
+    <div class="node-info" (click)="click($event, i)" [ngClass]="{ 'node-info-active': node.active }">
+      {{ node.path }}
+    </div>
+    <app-tree-node [nodes]="node.children" [depth]="depth + 1" [height]="height"></app-tree-node>
+  </div>
+</div>
