@@ -7,8 +7,8 @@ import {
   Renderer2,
   ViewChild,
 } from '@angular/core';
-import { TreeNode } from '../tree-node';
 import { NodeService } from '../../node.service';
+import { TreeNode, TreeNodeState } from '../../node';
 
 @Component({
   selector: 'app-tree-node',
@@ -23,11 +23,7 @@ export class TreeNodeComponent implements AfterViewInit {
   @Input()
   set height(h: number) {
     this.elHeight = h;
-    this.calculateStyling(h);
-  }
-
-  get height(): number {
-    return this.elHeight;
+    this.calculateStyling();
   }
 
   elHeight!: number;
@@ -38,20 +34,24 @@ export class TreeNodeComponent implements AfterViewInit {
   constructor(private renderer: Renderer2, private nodeService: NodeService, private elRef: ElementRef, private cdRef: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
-    this.calculateStyling(this.elHeight);
+    this.calculateStyling();
+  }
+
+  markForCheck(): void {
+    this.cdRef.markForCheck();
   }
 
   click(event: MouseEvent): void {
-    this.nodeService.updateNodeTree(this.node, this.nodeService.changeCurrentNode);
+    this.nodeService.changeCurrentNode(this);
   }
 
-  calculateStyling(height: number): void {
+  calculateStyling(): void {
     if (this.elRef) {
       this.renderer.setStyle(this.elRef.nativeElement, 'height', `${this.elHeight}px`);
     }
 
     if (this.containerEl) {
-      this.renderer.setStyle(this.containerEl.nativeElement, 'margin-top', `${this.height}px`);
+      this.renderer.setStyle(this.containerEl.nativeElement, 'margin-top', `${this.elHeight}px`);
     }
   }
 }

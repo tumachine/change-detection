@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, EventEmitter, Output } from '@angular/core';
-import { NodeService } from '../node.service';
-import { TreeNode } from '../tree/tree-node';
+import { TreeNode } from '../node';
+import { TreeNodeComponent } from '../tree/tree-node/tree-node.component';
 
 @Component({
   selector: 'app-control',
@@ -10,7 +10,7 @@ import { TreeNode } from '../tree/tree-node';
 })
 export class ControlComponent {
   @Input()
-  currentNode!: TreeNode | null;
+  currentNodeComponent!: TreeNodeComponent | null;
 
   @Output()
   addNode = new EventEmitter<TreeNode>();

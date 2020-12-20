@@ -5,12 +5,10 @@ import {
   Component,
   ElementRef,
   HostListener, Input,
-  OnInit, Output,
   ViewChild,
-  EventEmitter
 } from '@angular/core';
-import { NodeService, TreeState } from '../node.service';
-import { TreeNode } from './tree-node';
+import { NodeService } from '../node.service';
+import { TreeNode } from '../node';
 
 @Component({
   selector: 'app-tree',
@@ -19,22 +17,27 @@ import { TreeNode } from './tree-node';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TreeComponent implements AfterViewInit {
-  height!: number;
-
   @Input()
-  set treeState(ts: TreeState) {
+  set root(ts: TreeNode) {
     this.ts = ts;
     this.calculateStyling();
   }
 
-  ts!: TreeState;
+  @Input()
+  set depth(d: number | null) {
+    this.d = d ? d : 0;
+    this.calculateStyling();
+  }
+
+  height!: number;
+  ts!: TreeNode;
+  d!: number;
 
   @ViewChild('treeContainer')
   treeContainer!: ElementRef<HTMLDivElement>;
 
   @HostListener('window:resize', ['$event'])
   sizeChange(event: UIEvent): void {
-    console.log('size change');
     this.calculateStyling();
   }
 
@@ -47,7 +50,7 @@ export class TreeComponent implements AfterViewInit {
 
   calculateStyling(): void {
     if (this.treeContainer) {
-      this.height = this.treeContainer.nativeElement.getBoundingClientRect().height / this.ts.depth;
+      this.height = this.treeContainer.nativeElement.getBoundingClientRect().height / this.d;
     }
   }
 }
