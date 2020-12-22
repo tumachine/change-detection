@@ -5,10 +5,11 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ControlComponent } from './control/control.component';
 import { TreeModule } from './tree/tree.module';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [ AppComponent, ControlComponent ],
-  imports: [ BrowserModule, AppRoutingModule, TreeModule ],
+  imports: [ BrowserModule, BrowserAnimationsModule, AppRoutingModule, TreeModule ],
   providers: [],
   bootstrap: [AppComponent]
 })

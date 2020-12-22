@@ -14,9 +14,15 @@ export class NodeService {
 
   constructor() {
     this.root = this.createFirstNode();
-    this.root.generateNodes(5, 2);
+    this.root.generateNodes(3, 3);
     this.depth.next(this.root.getDepth());
-    // interval(500).subscribe(() => this.changeCurrentNode(this.root));
+    console.log(this.root.countNodes());
+    // interval(100).subscribe(() => {
+    //   const randomNode = this.root.getRandomNode();
+    //   if (randomNode) {
+    //     this.changeCurrentNode(randomNode);
+    //   }
+    // });
   }
 
   onCheck(name: string): void {
@@ -43,10 +49,8 @@ export class NodeService {
         const leftChild = node.parent.children[node.parent.children.length - 1];
         this.changeCurrentNode(leftChild);
         // leftChild?.value.markForCheck();
-        console.log('left');
       } else if (node.parent) {
         this.changeCurrentNode(node.parent);
-        console.log('parent');
       }
       this.depth.next(this.root.getDepth());
       node?.value.markForCheck();
@@ -56,17 +60,20 @@ export class NodeService {
   changeCurrentNode(node: TreeNode<TreeNodeComponent>): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
-      currentNode.changeState({ current: !currentNode.state.current });
+      currentNode.value.current = !currentNode.value.current;
       this.currentNode.next(null);
       currentNode?.value.markForCheck();
     } else {
       if (currentNode) {
-        currentNode.changeState({ current: false });
+        currentNode.value.current = false;
         currentNode?.value.markForCheck();
+        // currentNode?.value.onCurrentChange('1');
       }
-      node.changeState({ current: true });
+      node.value.current = true;
       node?.value.markForCheck();
       this.currentNode.next(node);
+      // node.value.onCurrentChange('0.5');
+      node.value.onRemove();
     }
   }
 

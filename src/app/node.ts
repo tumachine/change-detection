@@ -1,21 +1,15 @@
 import { randomInt } from './utils';
 
-export interface TreeNodeState {
-  current: boolean;
-}
-
 export class TreeNode<T> {
   parent!: TreeNode<T> | null;
   children!: TreeNode<T>[];
   path!: number[];
-  state!: TreeNodeState;
   value!: T;
 
-  constructor(parent: TreeNode<T> | null = null, children: TreeNode<T>[] = [], path: number[] = [], state: TreeNodeState = { current: false }) {
+  constructor(parent: TreeNode<T> | null = null, children: TreeNode<T>[] = [], path: number[] = []) {
     this.parent = parent;
     this.children = children;
     this.path = path;
-    this.state = state;
   }
 
   getDepth(): number {
@@ -60,16 +54,40 @@ export class TreeNode<T> {
     this.nameChildren();
   }
 
-  changeState(state: Partial<TreeNodeState>): void {
-    this.state = { ...this.state, ...state };
-  }
-
   copy(): TreeNode<T> {
     return this.copyNodeRecursive(this, this.copyNode(this));
   }
 
+  countNodes(): number {
+    let amount = 1;
+    this.walkOverChildren(() => {
+      amount += 1;
+      return false;
+    });
+    return amount;
+  }
+
+  getRandomNode(): TreeNode<T> {
+    const randomNodeNum = randomInt(0, this.countNodes());
+    if (randomNodeNum === 0) {
+      return this;
+    }
+
+    let counter = 0;
+    let randomNode = new TreeNode<T>(null, [], []);
+    this.walkOverChildren(n => {
+      counter++;
+      if (counter === randomNodeNum) {
+        randomNode = n;
+        return true;
+      }
+      return false;
+    });
+    return randomNode;
+  }
+
   private copyNode(node: TreeNode<T>): TreeNode<T> {
-    return new TreeNode<T>(node, [], [ ...node.path ], node.state);
+    return new TreeNode<T>(node, [], [ ...node.path ]);
   }
 
   private copyNodeRecursive(real: TreeNode<T>, copy: TreeNode<T>): TreeNode<T> {
@@ -92,9 +110,12 @@ export class TreeNode<T> {
     }
   }
 
-  private walkOverChildren(operation: (n: TreeNode<T>) => void, nodes: TreeNode<T>[] = this.children): void {
+  // on operation true, stop walking
+  private walkOverChildren(operation: (n: TreeNode<T>) => boolean, nodes: TreeNode<T>[] = this.children): void {
     nodes.forEach(n => {
-      operation(n);
+      if (operation(n)) {
+        return;
+      }
       this.walkOverChildren(operation, n.children);
     });
   }
