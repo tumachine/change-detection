@@ -10,11 +10,11 @@ import { TreeNodeComponent } from '../tree/tree-node/tree-node.component';
 })
 export class ControlComponent {
   @Input()
-  currentNodeComponent!: TreeNodeComponent | null;
+  currentNode!: TreeNode<TreeNodeComponent> | null;
 
   @Output()
-  addNode = new EventEmitter<TreeNode>();
+  addNode = new EventEmitter<TreeNode<TreeNodeComponent>>();
 
   @Output()
-  removeNode = new EventEmitter<TreeNode>();
+  removeNode = new EventEmitter<TreeNode<TreeNodeComponent>>();
 }

@@ -8,7 +8,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { NodeService } from '../../node.service';
-import { TreeNode, TreeNodeState } from '../../node';
+import { TreeNode } from '../../node';
 
 @Component({
   selector: 'app-tree-node',
@@ -18,7 +18,12 @@ import { TreeNode, TreeNodeState } from '../../node';
 })
 export class TreeNodeComponent implements AfterViewInit {
   @Input()
-  node!: TreeNode;
+  set setNode(node: TreeNode<TreeNodeComponent>) {
+    this.node = node;
+    this.node.value = this;
+  }
+
+  node!: TreeNode<TreeNodeComponent>;
 
   @Input()
   set height(h: number) {
@@ -42,7 +47,7 @@ export class TreeNodeComponent implements AfterViewInit {
   }
 
   click(event: MouseEvent): void {
-    this.nodeService.changeCurrentNode(this);
+    this.nodeService.changeCurrentNode(this.node);
   }
 
   calculateStyling(): void {

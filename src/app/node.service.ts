@@ -1,22 +1,22 @@
-import { Injectable } from '@angular/core';
-import { TreeNode, TreeNodeState } from './node';
+import { ComponentFactoryResolver, Injectable } from '@angular/core';
+import { TreeNode } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, interval } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  root!: TreeNode;
-  // currentComponent!: TreeNodeComponent;
+  root!: TreeNode<TreeNodeComponent>;
   history: string[] = [];
   depth = new BehaviorSubject<number>(0);
-  currentComponent = new BehaviorSubject<TreeNodeComponent | null>(null);
+  currentNode = new BehaviorSubject<TreeNode<TreeNodeComponent> | null>(null);
 
   constructor() {
     this.root = this.createFirstNode();
-    this.root.generateNodes(4, 2);
+    this.root.generateNodes(5, 2);
     this.depth.next(this.root.getDepth());
+    // interval(500).subscribe(() => this.changeCurrentNode(this.root));
   }
 
   onCheck(name: string): void {
@@ -28,60 +28,49 @@ export class NodeService {
     this.history = [];
   }
 
-  addNode(node: TreeNode): void {
-    // node.addChild(new TreeNode(node));
-    const component = this.currentComponent.value;
-    component?.node.addChild(new TreeNode(node));
+  addNode(node: TreeNode<TreeNodeComponent>): void {
+    const currentNode = this.currentNode.value;
+    currentNode?.addChild(new TreeNode(node));
     this.depth.next(this.root.getDepth());
-    component?.markForCheck();
+    currentNode?.value.markForCheck();
   }
 
   removeNode(): void {
-    const component = this.currentComponent.value;
-    if (component?.node.remove()) {
-      // const children = component?.node.parent?.children;
-      // if (children && children.length > 0) {
-      //   this.currentComponent.next()
-      // }
-      // if (parent?.children.length > 0) {}
-      // if (component?.node.parent?.children.length > 0) {
-      //
-      // }
+    const node = this.currentNode.value;
+    if (node && node?.parent) {
+      node.remove();
+      if (node.parent.children.length > 0) {
+        const leftChild = node.parent.children[node.parent.children.length - 1];
+        this.changeCurrentNode(leftChild);
+        // leftChild?.value.markForCheck();
+        console.log('left');
+      } else if (node.parent) {
+        this.changeCurrentNode(node.parent);
+        console.log('parent');
+      }
       this.depth.next(this.root.getDepth());
-      component?.markForCheck();
+      node?.value.markForCheck();
     }
   }
 
-  changeCurrentNode(nodeComponent: TreeNodeComponent): void {
-/*    this.root = this.root.copy();
-
-    if (this.current) {
-      const foundCurrentNodeFromCopy = this.root.findNode(this.current);
-      if (foundCurrentNodeFromCopy) {
-        foundCurrentNodeFromCopy.changeState({ current: false });
-      }
-    }
-    const foundNodeFromCopy = this.root.findNode(node);
-    if (foundNodeFromCopy) {
-      foundNodeFromCopy.changeState({ current: true });
-    }
-    this.current = foundNodeFromCopy;*/
-    const component = this.currentComponent.value;
-    if (component === nodeComponent) {
-      component.node.changeState({ current: !component.node.state.current });
-      this.currentComponent.next(null);
-      component.markForCheck();
+  changeCurrentNode(node: TreeNode<TreeNodeComponent>): void {
+    const currentNode = this.currentNode.value;
+    if (currentNode === node) {
+      currentNode.changeState({ current: !currentNode.state.current });
+      this.currentNode.next(null);
+      currentNode?.value.markForCheck();
     } else {
-      if (component) {
-        component.node.changeState({ current: false });
-        component.markForCheck();
+      if (currentNode) {
+        currentNode.changeState({ current: false });
+        currentNode?.value.markForCheck();
       }
-      nodeComponent.node.changeState({ current: true });
-      this.currentComponent.next(nodeComponent);
+      node.changeState({ current: true });
+      node?.value.markForCheck();
+      this.currentNode.next(node);
     }
   }
 
-  createFirstNode(): TreeNode  {
-    return new TreeNode(null, [], [0]);
+  createFirstNode(): TreeNode<TreeNodeComponent>  {
+    return new TreeNode<TreeNodeComponent>(null, [], [0]);
   }
 }
