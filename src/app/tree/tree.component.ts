@@ -7,9 +7,8 @@ import {
   HostListener, Input,
   ViewChild,
 } from '@angular/core';
-import { NodeService } from '../node.service';
+import { NodeService, TreeNodeValue } from '../node.service';
 import { TreeNode } from '../node';
-import { TreeNodeComponent } from './tree-node/tree-node.component';
 
 @Component({
   selector: 'app-tree',
@@ -19,7 +18,7 @@ import { TreeNodeComponent } from './tree-node/tree-node.component';
 })
 export class TreeComponent implements AfterViewInit {
   @Input()
-  set root(ts: TreeNode<TreeNodeComponent>) {
+  set root(ts: TreeNode<TreeNodeValue>) {
     this.ts = ts;
     this.calculateStyling();
   }
@@ -31,7 +30,7 @@ export class TreeComponent implements AfterViewInit {
   }
 
   height!: number;
-  ts!: TreeNode<TreeNodeComponent>;
+  ts!: TreeNode<TreeNodeValue>;
   d!: number;
 
   @ViewChild('treeContainer')

@@ -1,15 +1,21 @@
-import { randomInt } from './utils';
+import { deepClone, randomInt } from './utils';
+import { defaultTreeNodeValue } from './node.service';
 
 export class TreeNode<T> {
   parent!: TreeNode<T> | null;
   children!: TreeNode<T>[];
   path!: number[];
   value!: T;
+  defaultValue!: T;
+  deepCloneFunc!: (value: T) => T;
 
-  constructor(parent: TreeNode<T> | null = null, children: TreeNode<T>[] = [], path: number[] = []) {
+  constructor(parent: TreeNode<T> | null, value: T, defaultValue: T, deepCloneFunc: (value: T) => T, children: TreeNode<T>[] = [], path: number[] = []) {
     this.parent = parent;
     this.children = children;
     this.path = path;
+    this.value = value;
+    this.defaultValue = defaultValue;
+    this.deepCloneFunc = deepCloneFunc;
   }
 
   getDepth(): number {
@@ -19,6 +25,7 @@ export class TreeNode<T> {
   }
 
   addChild(child: TreeNode<T>, index: number | null = null): void {
+    child.parent = this;
     if (index) {
       this.children.splice(index, 0, child);
       child.path = this.createNodePath(index);
@@ -42,7 +49,8 @@ export class TreeNode<T> {
       return;
     }
     for (let i = 0; i < childrenNum; i++) {
-      child.addChild(new TreeNode<T>(child));
+      const newChild = new TreeNode<T>(null, this.deepCloneFunc(this.defaultValue), this.defaultValue, this.deepCloneFunc);
+      child.addChild(newChild);
     }
 
     child.children.forEach(n => this.generateNodes(depth - 1, childrenNum, n));
@@ -74,7 +82,7 @@ export class TreeNode<T> {
     }
 
     let counter = 0;
-    let randomNode = new TreeNode<T>(null, [], []);
+    let randomNode = new TreeNode<T>(null, this.deepCloneFunc(this.defaultValue), this.defaultValue, this.deepCloneFunc, [], []);
     this.walkOverChildren(n => {
       counter++;
       if (counter === randomNodeNum) {
@@ -87,7 +95,7 @@ export class TreeNode<T> {
   }
 
   private copyNode(node: TreeNode<T>): TreeNode<T> {
-    return new TreeNode<T>(node, [], [ ...node.path ]);
+    return new TreeNode<T>(node, this.deepCloneFunc(node.value), node.defaultValue, this.deepCloneFunc, [], [ ...node.path ]);
   }
 
   private copyNodeRecursive(real: TreeNode<T>, copy: TreeNode<T>): TreeNode<T> {

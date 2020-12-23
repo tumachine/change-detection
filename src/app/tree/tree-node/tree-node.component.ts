@@ -7,7 +7,7 @@ import {
   Renderer2,
   ViewChild,
 } from '@angular/core';
-import { NodeService } from '../../node.service';
+import { defaultTreeNodeValue, NodeService, TreeNodeValue, TreeNodeValueProps } from '../../node.service';
 import { TreeNode } from '../../node';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
 
@@ -19,13 +19,14 @@ import { animate, AnimationBuilder, state, style, transition, trigger } from '@a
 })
 export class TreeNodeComponent implements AfterViewInit {
   @Input()
-  set setNode(node: TreeNode<TreeNodeComponent>) {
+  set setNode(node: TreeNode<TreeNodeValue>) {
     this.node = node;
-    this.node.value = this;
+    this.props = node.value.props;
+    this.node.value.component = this;
   }
 
-  node!: TreeNode<TreeNodeComponent>;
-  current = false;
+  node!: TreeNode<TreeNodeValue>;
+  props = defaultTreeNodeValue.props;
 
   @Input()
   set height(h: number) {
@@ -47,7 +48,7 @@ export class TreeNodeComponent implements AfterViewInit {
   onRemove(): void {
     const animation = this.builder.build([
       style({ 'flex-grow': 1}),
-      animate(500, style({ 'flex-grow': 0 }))
+      animate(200, style({ 'flex-grow': 0 }))
     ]);
     const player = animation.create(this.elRef.nativeElement);
     player.play();

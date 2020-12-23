@@ -1,16 +1,38 @@
-import { ComponentFactoryResolver, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { TreeNode } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
-import { BehaviorSubject, interval } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
+import { deepClone } from './utils';
+
+export interface TreeNodeValueProps {
+  current: boolean;
+}
+
+export interface TreeNodeValue {
+  component?: TreeNodeComponent;
+  props: TreeNodeValueProps;
+}
+
+
+export const defaultTreeNodeValue: TreeNodeValue = {
+  props: {
+    current: false,
+  }
+};
+
+function deepCloneTreeNodeValue(value: TreeNodeValue): TreeNodeValue {
+  value.component = undefined;
+  return deepClone(value);
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  root!: TreeNode<TreeNodeComponent>;
+  root!: TreeNode<TreeNodeValue>;
   history: string[] = [];
   depth = new BehaviorSubject<number>(0);
-  currentNode = new BehaviorSubject<TreeNode<TreeNodeComponent> | null>(null);
+  currentNode = new BehaviorSubject<TreeNode<TreeNodeValue> | null>(null);
 
   constructor() {
     this.root = this.createFirstNode();
@@ -34,11 +56,11 @@ export class NodeService {
     this.history = [];
   }
 
-  addNode(node: TreeNode<TreeNodeComponent>): void {
+  addNode(node: TreeNode<TreeNodeValue>): void {
     const currentNode = this.currentNode.value;
-    currentNode?.addChild(new TreeNode(node));
+    currentNode?.addChild(node);
     this.depth.next(this.root.getDepth());
-    currentNode?.value.markForCheck();
+    currentNode?.value.component?.markForCheck();
   }
 
   removeNode(): void {
@@ -53,31 +75,28 @@ export class NodeService {
         this.changeCurrentNode(node.parent);
       }
       this.depth.next(this.root.getDepth());
-      node?.value.markForCheck();
+      node?.value.component?.markForCheck();
     }
   }
 
-  changeCurrentNode(node: TreeNode<TreeNodeComponent>): void {
+  changeCurrentNode(node: TreeNode<TreeNodeValue>): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
-      currentNode.value.current = !currentNode.value.current;
+      currentNode.value.props.current = !currentNode.value.props.current;
       this.currentNode.next(null);
-      currentNode?.value.markForCheck();
+      currentNode?.value.component?.markForCheck();
     } else {
       if (currentNode) {
-        currentNode.value.current = false;
-        currentNode?.value.markForCheck();
-        // currentNode?.value.onCurrentChange('1');
+        currentNode.value.props.current = false;
+        currentNode?.value.component?.markForCheck();
       }
-      node.value.current = true;
-      node?.value.markForCheck();
+      node.value.props.current = true;
+      node?.value.component?.markForCheck();
       this.currentNode.next(node);
-      // node.value.onCurrentChange('0.5');
-      node.value.onRemove();
     }
   }
 
-  createFirstNode(): TreeNode<TreeNodeComponent>  {
-    return new TreeNode<TreeNodeComponent>(null, [], [0]);
+  createFirstNode(): TreeNode<TreeNodeValue>  {
+    return new TreeNode<TreeNodeValue>(null, defaultTreeNodeValue, defaultTreeNodeValue, deepCloneTreeNodeValue, [], [0]);
   }
 }
