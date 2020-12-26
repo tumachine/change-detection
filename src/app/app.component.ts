@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
-import { NodeService, TreeNodeValue } from './node.service';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { NodeService } from './node.service';
 import { TreeNode } from './node';
 
 @Component({
@@ -9,13 +9,13 @@ import { TreeNode } from './node';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
-  constructor(public nodeService: NodeService, private cdRef: ChangeDetectorRef) {}
+  constructor(public nodeService: NodeService) {}
 
   root = this.nodeService.root;
   depth = this.nodeService.depth;
   current = this.nodeService.currentNode;
 
-  addNode(node: TreeNode<TreeNodeValue>): void {
+  addNode(node: TreeNode): void {
     this.nodeService.addNode(node);
   }
 

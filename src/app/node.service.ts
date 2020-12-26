@@ -1,38 +1,15 @@
 import { Injectable } from '@angular/core';
-import { TreeNode } from './node';
-import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
 import { BehaviorSubject } from 'rxjs';
-import { deepClone } from './utils';
-
-export interface TreeNodeValueProps {
-  current: boolean;
-}
-
-export interface TreeNodeValue {
-  component?: TreeNodeComponent;
-  props: TreeNodeValueProps;
-}
-
-
-export const defaultTreeNodeValue: TreeNodeValue = {
-  props: {
-    current: false,
-  }
-};
-
-function deepCloneTreeNodeValue(value: TreeNodeValue): TreeNodeValue {
-  value.component = undefined;
-  return deepClone(value);
-}
+import { defaultTreeNodeValue, TreeNode } from './node';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  root!: TreeNode<TreeNodeValue>;
+  root!: TreeNode;
   history: string[] = [];
   depth = new BehaviorSubject<number>(0);
-  currentNode = new BehaviorSubject<TreeNode<TreeNodeValue> | null>(null);
+  currentNode = new BehaviorSubject<TreeNode | null>(null);
 
   constructor() {
     this.root = this.createFirstNode();
@@ -56,7 +33,7 @@ export class NodeService {
     this.history = [];
   }
 
-  addNode(node: TreeNode<TreeNodeValue>): void {
+  addNode(node: TreeNode): void {
     const currentNode = this.currentNode.value;
     currentNode?.addChild(node);
     this.depth.next(this.root.getDepth());
@@ -79,7 +56,7 @@ export class NodeService {
     }
   }
 
-  changeCurrentNode(node: TreeNode<TreeNodeValue>): void {
+  changeCurrentNode(node: TreeNode): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
       currentNode.value.props.current = !currentNode.value.props.current;
@@ -96,7 +73,7 @@ export class NodeService {
     }
   }
 
-  createFirstNode(): TreeNode<TreeNodeValue>  {
-    return new TreeNode<TreeNodeValue>(null, defaultTreeNodeValue, defaultTreeNodeValue, deepCloneTreeNodeValue, [], [0]);
+  createFirstNode(): TreeNode  {
+    return new TreeNode(null, defaultTreeNodeValue, [] , [0]);
   }
 }

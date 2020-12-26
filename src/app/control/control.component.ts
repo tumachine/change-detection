@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input, EventEmitter, Output } from '@angular/core';
 import { TreeNode } from '../node';
-import { TreeNodeComponent } from '../tree/tree-node/tree-node.component';
-import { defaultTreeNodeValue, TreeNodeValue, deepCloneFunc } from '../node.service';
 
 @Component({
   selector: 'app-control',
@@ -11,17 +9,16 @@ import { defaultTreeNodeValue, TreeNodeValue, deepCloneFunc } from '../node.serv
 })
 export class ControlComponent {
   @Input()
-  currentNode!: TreeNode<TreeNodeValue> | null;
+  currentNode!: TreeNode | null;
 
   @Output()
-  addNode = new EventEmitter<TreeNode<TreeNodeValue>>();
+  addNode = new EventEmitter<TreeNode>();
 
   @Output()
-  removeNode = new EventEmitter<TreeNode<TreeNodeValue>>();
+  removeNode = new EventEmitter<TreeNode>();
 
   add(): void {
-    const newNode = new TreeNode<TreeNodeValue>(null, { ...defaultTreeNodeValue}, defaultTreeNodeValue);
-    newNode.value.props = { current: true };
+    const newNode = new TreeNode();
     this.addNode.emit(newNode);
   }
 }

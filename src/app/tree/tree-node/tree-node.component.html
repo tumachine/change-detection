@@ -1,4 +1,4 @@
-<div class="node-info" (click)="click($event)" [ngClass]="{ 'node-info-active': props?.current }">
+<div class="node-info" (click)="click($event)" [ngClass]="{ 'node-info-active': node.value.props.current }">
   {{ node.path[node.path.length - 1] }}<br>
 <!--  {{ current }}-->
 </div>

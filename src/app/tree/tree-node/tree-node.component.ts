@@ -7,7 +7,7 @@ import {
   Renderer2,
   ViewChild,
 } from '@angular/core';
-import { defaultTreeNodeValue, NodeService, TreeNodeValue, TreeNodeValueProps } from '../../node.service';
+import { NodeService } from '../../node.service';
 import { TreeNode } from '../../node';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
 
@@ -19,14 +19,12 @@ import { animate, AnimationBuilder, state, style, transition, trigger } from '@a
 })
 export class TreeNodeComponent implements AfterViewInit {
   @Input()
-  set setNode(node: TreeNode<TreeNodeValue>) {
+  set setNode(node: TreeNode) {
     this.node = node;
-    this.props = node.value.props;
     this.node.value.component = this;
   }
 
-  node!: TreeNode<TreeNodeValue>;
-  props = defaultTreeNodeValue.props;
+  node!: TreeNode;
 
   @Input()
   set height(h: number) {
