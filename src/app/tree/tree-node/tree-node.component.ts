@@ -1,4 +1,5 @@
 import {
+  AfterContentChecked,
   AfterViewInit,
   ChangeDetectionStrategy, ChangeDetectorRef,
   Component,
@@ -8,7 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { NodeService } from '../../node.service';
-import { TreeNode } from '../../node';
+import { TreeNode, TreeNodeValue } from '../../node';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
 
 @Component({
@@ -17,14 +18,17 @@ import { animate, AnimationBuilder, state, style, transition, trigger } from '@a
   styleUrls: ['./tree-node.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TreeNodeComponent implements AfterViewInit {
+export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   @Input()
   set setNode(node: TreeNode) {
     this.node = node;
-    this.node.value.component = this;
+    this.node.value.value.component = this;
   }
 
   node!: TreeNode;
+
+  @Input()
+  value: TreeNodeValue | null = null;
 
   @Input()
   set height(h: number) {
@@ -41,6 +45,10 @@ export class TreeNodeComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.calculateStyling();
+  }
+
+  ngAfterContentChecked(): void {
+    this.nodeService.onCheck(this.node);
   }
 
   onRemove(): void {

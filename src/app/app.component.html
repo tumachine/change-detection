@@ -1,4 +1,4 @@
 <div class="main-container">
   <app-tree [root]="root" [depth]="depth | async"></app-tree>
-  <app-control [currentNode]="current | async" (addNode)="addNode($event)" (removeNode)="removeNode()"></app-control>
+  <app-control [currentNode]="current | async" (removeNode)="removeNode()"></app-control>
 </div>

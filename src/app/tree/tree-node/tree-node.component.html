@@ -1,7 +1,11 @@
-<div class="node-info" (click)="click($event)" [ngClass]="{ 'node-info-active': node.value.props.current }">
+<div
+  class="node-info"
+  (click)="click($event)"
+  [ngClass]="{ 'node-info-current': value?.props?.current, 'node-info-checked': value?.props?.checked }"
+>
   {{ node.path[node.path.length - 1] }}<br>
 <!--  {{ current }}-->
 </div>
 <div class="node-container" #containerEl>
-  <app-tree-node *ngFor="let nodeChild of node.children" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>
+  <app-tree-node *ngFor="let nodeChild of node.children | async" [setNode]="nodeChild" [value]="nodeChild.value | async" [height]="elHeight"></app-tree-node>
 </div>

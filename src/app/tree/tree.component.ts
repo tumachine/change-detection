@@ -19,7 +19,8 @@ import { TreeNode } from '../node';
 export class TreeComponent implements AfterViewInit {
   @Input()
   set root(ts: TreeNode) {
-    this.ts = ts;
+    this.rt = ts;
+    this.d = ts.getDepth();
     this.calculateStyling();
   }
 
@@ -30,7 +31,7 @@ export class TreeComponent implements AfterViewInit {
   }
 
   height!: number;
-  ts!: TreeNode;
+  rt!: TreeNode;
   d!: number;
 
   @ViewChild('treeContainer')

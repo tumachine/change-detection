@@ -20,10 +20,14 @@
     background: white;
   }
   cursor: pointer;
-}
 
-.node-info-active {
-  background: white;
+  &-current {
+    background: white;
+  }
+
+  &-checked {
+    background: orange;
+  }
 }
 
 .node-container {
