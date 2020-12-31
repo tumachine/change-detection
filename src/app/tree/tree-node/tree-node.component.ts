@@ -8,8 +8,8 @@ import {
   Renderer2,
   ViewChild,
 } from '@angular/core';
-import { NodeService } from '../../node.service';
-import { TreeNode, TreeNodeValue } from '../../node';
+import { NodeService, TreeNodeValue } from '../../node.service';
+import { TreeNode } from '../../node';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
 
 @Component({
@@ -20,12 +20,12 @@ import { animate, AnimationBuilder, state, style, transition, trigger } from '@a
 })
 export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   @Input()
-  set setNode(node: TreeNode) {
+  set setNode(node: TreeNode<TreeNodeValue>) {
     this.node = node;
-    this.node.value.value.component = this;
+    this.node.value.component = this;
   }
 
-  node!: TreeNode;
+  node!: TreeNode<TreeNodeValue>;
 
   @Input()
   value: TreeNodeValue | null = null;

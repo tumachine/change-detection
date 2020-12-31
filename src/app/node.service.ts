@@ -1,16 +1,60 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, interval } from 'rxjs';
-import { TreeNode } from './node';
+import { TreeNode, TreeNodeConfig } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
+import { deepClone } from './utils';
+
+export interface TreeNodeValueProps {
+  current: boolean;
+  checked: boolean;
+}
+
+export interface TreeNodeValue {
+  component: TreeNodeComponent | null;
+  props: TreeNodeValueProps;
+}
+
+class TreeNodeConfigForComponent implements TreeNodeConfig<TreeNodeValue> {
+  value = new BehaviorSubject<TreeNodeValue | null>(null);
+  children = new BehaviorSubject<TreeNode<TreeNodeValue>[]>([]);
+
+  defaultValue: TreeNodeValue = {
+    component: null,
+    props: {
+      current: false,
+      checked: false,
+    }
+  };
+
+  deepCloneValueFunc(val: TreeNodeValue): TreeNodeValue {
+    return {
+      component: val.component,
+      props: deepClone(val.props)
+    };
+  }
+
+  onValueChange(val: TreeNodeValue): void {
+    this.value.next(val);
+    console.log('prop change');
+    return;
+  }
+
+  onChildrenChange(val: TreeNodeValue, children: TreeNode<TreeNodeValue>[]): void {
+    this.children.next(children);
+    console.log('prop change');
+    return;
+  }
+}
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  root!: TreeNode;
-  history: TreeNode[] = [];
+  root!: TreeNode<TreeNodeValue>;
+  history: TreeNode<TreeNodeValue>[] = [];
   depth = new BehaviorSubject<number>(0);
-  currentNode = new BehaviorSubject<TreeNode | null>(null);
+  currentNode = new BehaviorSubject<TreeNode<TreeNodeValue> | null>(null);
   record = false;
 
   constructor() {
@@ -27,7 +71,7 @@ export class NodeService {
     // });
   }
 
-  onCheck(node: TreeNode): void {
+  onCheck(node: TreeNode<TreeNodeValue>): void {
     if (this.record) {
       this.history.push(node);
     }
@@ -43,19 +87,22 @@ export class NodeService {
   }
 
   reset(): void {
-    this.history.forEach(n => n.changeProps({ checked: false }));
+    this.history.forEach(n => this.changeProps(n, { checked: false }));
     this.history = [];
   }
 
-  showChecked(): void {
-    this.history.forEach(n => n.changeProps({ checked: true }));
+  changeProps(node: TreeNode<TreeNodeValue>, props: Partial<TreeNodeValueProps>): void {
+    node.changeValue({ props: { ...node.value.props, ...props }});
   }
 
-  addNode(node: TreeNode): void {
+  showChecked(): void {
+    this.history.forEach(n => this.changeProps(n, { checked: true }));
+  }
+
+  addNode(node: TreeNode<TreeNodeValue>): void {
     const currentNode = this.currentNode.value;
     currentNode?.addChild(node);
     this.depth.next(this.root.getDepth());
-    // currentNode?.value.component?.markForCheck();
   }
 
   removeNode(): void {
@@ -64,14 +111,13 @@ export class NodeService {
       node.parent.removeChild(node);
       this.changeCurrentNode(this.getNextAvailableNodeAfterDeletion(node));
       this.depth.next(this.root.getDepth());
-      // node?.value.component?.markForCheck();
     }
   }
 
-  getNextAvailableNodeAfterDeletion(removedNode: TreeNode): TreeNode {
+  getNextAvailableNodeAfterDeletion(removedNode: TreeNode<TreeNodeValue>): TreeNode<TreeNodeValue> {
     if (removedNode.parent) {
-      if (removedNode.parent.children.value.length > 0) {
-        return removedNode.parent.children.value[removedNode.parent.children.value.length - 1];
+      if (removedNode.parent.children.length > 0) {
+        return removedNode.parent.children[removedNode.parent.children.length - 1];
       }
       return removedNode.parent;
     } else {
@@ -79,16 +125,16 @@ export class NodeService {
     }
   }
 
-  changeCurrentNode(node: TreeNode): void {
+  changeCurrentNode(node: TreeNode<TreeNodeValue>): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
-      currentNode.changeProps({ current: !currentNode.getProps().current });
+      this.changeProps(currentNode, { current : !currentNode.value.props.current });
       this.currentNode.next(null);
     } else {
       if (currentNode) {
-        currentNode.changeProps({ current: !currentNode.getProps().current });
+        this.changeProps(currentNode, { current : !currentNode.value.props.current });
       }
-      node.changeProps({ current: !node.getProps().current });
+      this.changeProps(node, { current : !node.value.props.current });
       this.currentNode.next(node);
     }
   }

@@ -7,5 +7,5 @@
 <!--  {{ current }}-->
 </div>
 <div class="node-container" #containerEl>
-  <app-tree-node *ngFor="let nodeChild of node.children | async" [setNode]="nodeChild" [value]="nodeChild.value | async" [height]="elHeight"></app-tree-node>
+  <app-tree-node *ngFor="let nodeChild of node.config.children | async" [setNode]="nodeChild" [value]="nodeChild.value | async" [height]="elHeight"></app-tree-node>
 </div>
