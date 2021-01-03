@@ -4,13 +4,14 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef,
   Component,
   ElementRef,
-  Input,
+  Input, OnDestroy, OnInit,
   Renderer2,
   ViewChild,
 } from '@angular/core';
 import { NodeService, TreeNodeValue } from '../../node.service';
 import { TreeNode } from '../../node';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-tree-node',
@@ -23,12 +24,15 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   set setNode(node: TreeNode<TreeNodeValue>) {
     this.node = node;
     this.node.value.component = this;
+
+    this.value$.next(this.node.value);
+    this.children$.next(this.node.children);
   }
 
   node!: TreeNode<TreeNodeValue>;
 
-  @Input()
-  value: TreeNodeValue | null = null;
+  value$ = new BehaviorSubject<TreeNodeValue | null>(null);
+  children$ = new BehaviorSubject<TreeNode<TreeNodeValue>[]>([]);
 
   @Input()
   set height(h: number) {
@@ -41,7 +45,16 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   @ViewChild('containerEl')
   containerEl!: ElementRef;
 
-  constructor(private renderer: Renderer2, private nodeService: NodeService, private elRef: ElementRef, private cdRef: ChangeDetectorRef, private builder: AnimationBuilder) {}
+  @ViewChild('innerNode')
+  innerNode!: ElementRef;
+
+  constructor(
+    private renderer: Renderer2,
+    private nodeService: NodeService,
+    private elRef: ElementRef,
+    private cdRef: ChangeDetectorRef,
+    private builder: AnimationBuilder
+  ) {}
 
   ngAfterViewInit(): void {
     this.calculateStyling();
@@ -68,8 +81,24 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
     this.cdRef.markForCheck();
   }
 
+  shakeAnimation(): void {
+    const animation = this.builder.build([
+      // style({ width: '100%'}),
+      // animate(200, style({ width: '0%' })),
+      // animate(200, style({ width: '100%' })),
+      animate('0.1s', style({ transform: 'rotate(2deg)' })),
+      animate('0.1s', style({ transform: 'rotate(-2deg)' })),
+      animate('0.1s', style({ transform: 'rotate(2deg)' })),
+      // animate('0.1s', style({ transform: 'rotate(0)', background: 'white' })),
+      animate('0.1s', style({ transform: 'rotate(0)' })),
+    ]);
+    const player = animation.create(this.innerNode.nativeElement);
+    player.play();
+  }
+
   click(event: MouseEvent): void {
     this.nodeService.changeCurrentNode(this.node);
+    this.shakeAnimation();
   }
 
   calculateStyling(): void {

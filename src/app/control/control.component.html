@@ -2,6 +2,7 @@
   <div class="control-node-info" *ngIf="currentNode">
     <div>{{ currentNode.path }}</div>
     <div>{{ currentNode.getDepth() }}</div>
+    <div>{{ currentNode.value.props.current }}</div>
     <button (click)="add()">Add</button>
     <button (click)="remove()">Remove</button>
 <!--    construct node settings-->

@@ -1,11 +1,17 @@
 <div
+  *ngIf="{ value: value$ | async } as async"
   class="node-info"
   (click)="click($event)"
-  [ngClass]="{ 'node-info-current': value?.props?.current, 'node-info-checked': value?.props?.checked }"
 >
-  {{ node.path[node.path.length - 1] }}<br>
-<!--  {{ current }}-->
+  <div
+    #innerNode class="node-info-inner"
+    [ngClass]="{ 'node-info-current': async.value?.props?.current }"
+  >
+<!--    [ngClass]="{ 'node-info-current': async.value?.props?.current, 'node-info-checked': async.value?.props?.checked }"-->
+    {{ node.path[node.path.length - 1] }}<br>
+    {{ async.value?.props?.current }}
+  </div>
 </div>
 <div class="node-container" #containerEl>
-  <app-tree-node *ngFor="let nodeChild of node.config.children | async" [setNode]="nodeChild" [value]="nodeChild.value | async" [height]="elHeight"></app-tree-node>
+  <app-tree-node *ngFor="let nodeChild of children$ | async" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>
 </div>

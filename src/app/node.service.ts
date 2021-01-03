@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, interval } from 'rxjs';
-import { TreeNode, TreeNodeConfig } from './node';
+import { TreeNode } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
 import { deepClone } from './utils';
 
@@ -14,11 +14,8 @@ export interface TreeNodeValue {
   props: TreeNodeValueProps;
 }
 
-class TreeNodeConfigForComponent implements TreeNodeConfig<TreeNodeValue> {
-  value = new BehaviorSubject<TreeNodeValue | null>(null);
-  children = new BehaviorSubject<TreeNode<TreeNodeValue>[]>([]);
-
-  defaultValue: TreeNodeValue = {
+function patchNode(node: TreeNode<TreeNodeValue>): void {
+  node.defaultValue = {
     component: null,
     props: {
       current: false,
@@ -26,26 +23,30 @@ class TreeNodeConfigForComponent implements TreeNodeConfig<TreeNodeValue> {
     }
   };
 
-  deepCloneValueFunc(val: TreeNodeValue): TreeNodeValue {
+  node.deepCloneValueFunc = (val: TreeNodeValue): TreeNodeValue => {
     return {
       component: val.component,
       props: deepClone(val.props)
     };
-  }
+  };
 
-  onValueChange(val: TreeNodeValue): void {
-    this.value.next(val);
-    console.log('prop change');
-    return;
-  }
+  node.onValueChange = (val: TreeNodeValue): void => {
+    val.component?.value$.next(val);
+  };
 
-  onChildrenChange(val: TreeNodeValue, children: TreeNode<TreeNodeValue>[]): void {
-    this.children.next(children);
-    console.log('prop change');
-    return;
-  }
+  node.onChildrenChange = (val: TreeNodeValue, children: TreeNode<TreeNodeValue>[]): void => {
+    val.component?.children$.next(children);
+  };
 }
 
+export function createTreeNodeComponent(
+    parent: TreeNode<TreeNodeValue> | null,
+    children: TreeNode<TreeNodeValue>[],
+    path: number[],
+    value?: TreeNodeValue
+  ): TreeNode<TreeNodeValue> {
+  return new TreeNode<TreeNodeValue>(parent, value, children, path, patchNode);
+}
 
 @Injectable({
   providedIn: 'root'
@@ -58,8 +59,7 @@ export class NodeService {
   record = false;
 
   constructor() {
-    this.root = new TreeNode();
-    this.root.path = [0];
+    this.root = createTreeNodeComponent(null, [], [0]);
 
     this.root.generateNodes(5, 2);
     this.depth.next(this.root.getDepth());
@@ -83,7 +83,15 @@ export class NodeService {
 
   stopRecording(): void {
     this.record = false;
-    console.log(this.history);
+    // let counter = 0;
+    // setInterval(() => {
+    //   if (counter < this.history.length) {
+    //     this.history[counter].value.component?.shakeAnimation();
+    //     counter++;
+    //   } else {
+    //     return;
+    //   }
+    // }, 200);
   }
 
   reset(): void {
@@ -100,8 +108,7 @@ export class NodeService {
   }
 
   addNode(node: TreeNode<TreeNodeValue>): void {
-    const currentNode = this.currentNode.value;
-    currentNode?.addChild(node);
+    this.currentNode.value?.addChild(node);
     this.depth.next(this.root.getDepth());
   }
 

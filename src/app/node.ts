@@ -1,50 +1,40 @@
 import { randomInt } from './utils';
 import { TreeNodeValue } from './node.service';
 
-export interface TreeNodeConfig<T> {
-  deepCloneValueFunc: (val: T) => T;
-  defaultValue: T;
-  onValueChange: (val: T) => void;
-  onChildrenChange: (val: T, children: TreeNode<T>[]) => void;
-}
-
-export function treeNodeCreator<T>(config: TreeNodeConfig<T>): (parent: TreeNode<T>, children: TreeNode<T>[], path: number[], value: T | null) => TreeNode<T> {
-  return (parent: TreeNode<T>, children: TreeNode<T>[] = [], path: number[] = [], value: T | null = null) => {
-    return new TreeNode<T>(parent, value, children, path, config);
-  };
-}
-
-const defaultTreeNodeConfig: TreeNodeConfig<any> = {
-  deepCloneValueFunc: (val) => val,
-  defaultValue: 1,
-  onValueChange: (val) => {
-    return;
-  },
-  onChildrenChange: (val, children) => {
-    return;
-  },
-};
-
-
 export class TreeNode<T> {
   parent: TreeNode<T> | null = null;
   children: TreeNode<T>[] = [];
   path: number[] = [];
   value!: T;
-  config!: TreeNodeConfig<T>;
+
+  defaultValue!: T;
+  deepCloneValueFunc!: (val: T) => T;
+  onValueChange!: (val: T) => void;
+  onChildrenChange!: (val: T, children: TreeNode<T>[]) => void;
+  patchOnCreation!: (node: TreeNode<T>) => void;
 
   constructor(
     parent: TreeNode<T> | null = null,
     value: T | null = null,
     children: TreeNode<T>[] = [],
     path: number[] = [],
-    config: TreeNodeConfig<T> = defaultTreeNodeConfig,
+    patchOnCreation: (node: TreeNode<T>) => void,
   ) {
+    this.patchOnCreation = patchOnCreation;
+    this.patchOnCreation(this);
+
     this.parent = parent;
     this.children = children;
     this.path = path;
-    this.value = value ? value : config.deepCloneValueFunc(config.defaultValue);
-    this.config = config;
+
+    if (this.deepCloneValueFunc) {
+      this.value = value ? this.deepCloneValueFunc(value) : this.deepCloneValueFunc(this.defaultValue);
+    } else {
+      this.value = value ? value : this.defaultValue;
+    }
+
+    this.onValueChange(this.value);
+    this.onChildrenChange(this.value, this.children);
   }
 
   getDepth(): number {
@@ -63,7 +53,7 @@ export class TreeNode<T> {
       this.children.push(child);
       child.path = this.createNodePath(this.children.length - 1);
     }
-    this.config.onChildrenChange(this.value, this.children);
+    this.onChildrenChange(this.value, this.children);
   }
 
   generateNodes(depth: number, childrenNum: number, child: TreeNode<T> = this): void {
@@ -71,7 +61,7 @@ export class TreeNode<T> {
       return;
     }
     for (let i = 0; i < childrenNum; i++) {
-      const newChild = new TreeNode<T>(null, this.config.deepCloneValueFunc(this.config.defaultValue));
+      const newChild = new TreeNode<T>(null, this.deepCloneValueFunc(this.defaultValue), [], [], this.patchOnCreation);
       child.addChild(newChild);
     }
 
@@ -82,7 +72,7 @@ export class TreeNode<T> {
     const childIndex = child.path[child.path.length - 1];
     this.children.splice(childIndex, 1);
     this.nameChildren();
-    this.config.onChildrenChange(this.value, this.children);
+    this.onChildrenChange(this.value, this.children);
   }
 
   copy(): TreeNode<T> {
@@ -105,7 +95,7 @@ export class TreeNode<T> {
     }
 
     let counter = 0;
-    let randomNode = new TreeNode<T>(null, this.config.deepCloneValueFunc(this.config.defaultValue), [], []);
+    let randomNode = new TreeNode<T>(null, this.deepCloneValueFunc(this.defaultValue), [], [], this.patchOnCreation);
     this.walkOverChildren(n => {
       counter++;
       if (counter === randomNodeNum) {
@@ -119,15 +109,14 @@ export class TreeNode<T> {
 
   changeValue(val: Partial<TreeNodeValue>): void {
     this.value = { ...this.value, ...val };
-    this.config.onValueChange(this.value);
+    this.onValueChange(this.value);
   }
 
   private copyNode(node: TreeNode<T>): TreeNode<T> {
-    return new TreeNode(node, this.config.deepCloneValueFunc(node.value), [], [ ...node.path ]);
+    return new TreeNode<T>(node, this.deepCloneValueFunc(node.value) , [], [...node.path ], this.patchOnCreation);
   }
 
   private copyNodeRecursive(real: TreeNode<T>, copy: TreeNode<T>): TreeNode<T> {
-    // real.children.forEach(n => copy.children.push(this.copyNodeRecursive(n, this.copyNode(n))));
     real.children.forEach(n => this.copyNodeRecursive(n, this.copyNode(n)));
     return copy;
   }

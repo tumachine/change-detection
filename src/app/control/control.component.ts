@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, EventEmitter, Output } from '@angular/core';
 import { TreeNode } from '../node';
-import { NodeService } from '../node.service';
+import { createTreeNodeComponent, NodeService, TreeNodeValue } from '../node.service';
 
 @Component({
   selector: 'app-control',
@@ -10,10 +10,10 @@ import { NodeService } from '../node.service';
 })
 export class ControlComponent {
   @Input()
-  currentNode!: TreeNode | null;
+  currentNode!: TreeNode<TreeNodeValue> | null;
 
   @Output()
-  removeNode = new EventEmitter<TreeNode>();
+  removeNode = new EventEmitter<TreeNode<TreeNodeValue>>();
 
   constructor(private nodeService: NodeService) {}
 
@@ -34,7 +34,7 @@ export class ControlComponent {
   }
 
   add(): void {
-    this.nodeService.addNode(new TreeNode());
+    this.nodeService.addNode(createTreeNodeComponent(null, [], []));
   }
 
   remove(): void {
