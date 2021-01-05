@@ -6,33 +6,26 @@ import {
   ElementRef,
   Input, OnDestroy, OnInit,
   Renderer2,
-  ViewChild,
+  ViewChild, ViewRef,
 } from '@angular/core';
-import { NodeService, TreeNodeValue } from '../../node.service';
-import { TreeNode } from '../../node';
+import { NodeService, TreeNodeAsComponent } from '../../node.service';
 import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
-import { BehaviorSubject } from 'rxjs';
+import { NgControl } from '@angular/forms';
+import { ViewFlags } from '@angular/compiler/src/core';
 
 @Component({
   selector: 'app-tree-node',
   templateUrl: './tree-node.component.html',
   styleUrls: ['./tree-node.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   @Input()
-  set setNode(node: TreeNode<TreeNodeValue>) {
+  set setNode(node: TreeNodeAsComponent) {
     this.node = node;
     this.node.value.component = this;
-
-    this.value$.next(this.node.value);
-    this.children$.next(this.node.children);
   }
 
-  node!: TreeNode<TreeNodeValue>;
-
-  value$ = new BehaviorSubject<TreeNodeValue | null>(null);
-  children$ = new BehaviorSubject<TreeNode<TreeNodeValue>[]>([]);
+  node!: TreeNodeAsComponent;
 
   @Input()
   set height(h: number) {
@@ -53,7 +46,7 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
     private nodeService: NodeService,
     private elRef: ElementRef,
     private cdRef: ChangeDetectorRef,
-    private builder: AnimationBuilder
+    private builder: AnimationBuilder,
   ) {}
 
   ngAfterViewInit(): void {
@@ -99,6 +92,11 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   click(event: MouseEvent): void {
     this.nodeService.changeCurrentNode(this.node);
     this.shakeAnimation();
+    this.nodeService.startRecording();
+    setTimeout(() => {
+      this.nodeService.stopRecording();
+      this.nodeService.showChecked();
+    }, 50);
   }
 
   calculateStyling(): void {

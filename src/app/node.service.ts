@@ -2,11 +2,12 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, interval } from 'rxjs';
 import { TreeNode } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
-import { deepClone } from './utils';
+import { deepClone, IntervalUtils } from './utils';
 
 export interface TreeNodeValueProps {
   current: boolean;
   checked: boolean;
+  onPush: boolean;
 }
 
 export interface TreeNodeValue {
@@ -14,52 +15,52 @@ export interface TreeNodeValue {
   props: TreeNodeValueProps;
 }
 
-function patchNode(node: TreeNode<TreeNodeValue>): void {
-  node.defaultValue = {
+export class TreeNodeAsComponent extends TreeNode<TreeNodeValue> {
+  value$ = new BehaviorSubject<TreeNodeValue>(this.value);
+  children$ = new BehaviorSubject<TreeNodeAsComponent[]>(this.children);
+
+  defaultValue = {
     component: null,
     props: {
       current: false,
       checked: false,
+      onPush: true,
     }
   };
 
-  node.deepCloneValueFunc = (val: TreeNodeValue): TreeNodeValue => {
+  deepCloneValueFunc(val: TreeNodeValue): TreeNodeValue {
     return {
       component: val.component,
       props: deepClone(val.props)
     };
-  };
+  }
 
-  node.onValueChange = (val: TreeNodeValue): void => {
-    val.component?.value$.next(val);
-  };
+  onValueChange(val: TreeNodeValue): void {
+    this.value$.next(val);
+  }
 
-  node.onChildrenChange = (val: TreeNodeValue, children: TreeNode<TreeNodeValue>[]): void => {
-    val.component?.children$.next(children);
-  };
-}
-
-export function createTreeNodeComponent(
-    parent: TreeNode<TreeNodeValue> | null,
-    children: TreeNode<TreeNodeValue>[],
-    path: number[],
-    value?: TreeNodeValue
-  ): TreeNode<TreeNodeValue> {
-  return new TreeNode<TreeNodeValue>(parent, value, children, path, patchNode);
+  onChildrenChange(val: TreeNodeValue, children: TreeNodeAsComponent[]): void {
+    this.children$.next(children);
+  }
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
-  root!: TreeNode<TreeNodeValue>;
-  history: TreeNode<TreeNodeValue>[] = [];
+  root!: TreeNodeAsComponent;
+  history: TreeNodeAsComponent[] = [];
+  prevHistory: TreeNodeAsComponent[] = [];
   depth = new BehaviorSubject<number>(0);
-  currentNode = new BehaviorSubject<TreeNode<TreeNodeValue> | null>(null);
+  currentNode = new BehaviorSubject<TreeNodeAsComponent | null>(null);
+
+  enableRecording = new BehaviorSubject<boolean>(false);
   record = false;
+  intervalUtils = new IntervalUtils();
 
   constructor() {
-    this.root = createTreeNodeComponent(null, [], [0]);
+    this.root = new TreeNodeAsComponent();
+    this.root.setup(null, null, [], [0]);
 
     this.root.generateNodes(5, 2);
     this.depth.next(this.root.getDepth());
@@ -71,27 +72,25 @@ export class NodeService {
     // });
   }
 
-  onCheck(node: TreeNode<TreeNodeValue>): void {
-    if (this.record) {
+  startRecording(): void {
+    this.intervalUtils.stop();
+    this.prevHistory = [ ...this.history];
+    this.history = [];
+    this.record = true;
+  }
+
+  onCheck(node: TreeNodeAsComponent): void {
+    if (this.record && this.enableRecording.value) {
       this.history.push(node);
     }
   }
 
-  startRecording(): void {
-    this.record = true;
-  }
-
   stopRecording(): void {
     this.record = false;
-    // let counter = 0;
-    // setInterval(() => {
-    //   if (counter < this.history.length) {
-    //     this.history[counter].value.component?.shakeAnimation();
-    //     counter++;
-    //   } else {
-    //     return;
-    //   }
-    // }, 200);
+  }
+
+  toggleRecording(): void {
+    this.enableRecording.next(!this.enableRecording.value);
   }
 
   reset(): void {
@@ -99,15 +98,20 @@ export class NodeService {
     this.history = [];
   }
 
-  changeProps(node: TreeNode<TreeNodeValue>, props: Partial<TreeNodeValueProps>): void {
+  changeProps(node: TreeNodeAsComponent, props: Partial<TreeNodeValueProps>): void {
     node.changeValue({ props: { ...node.value.props, ...props }});
   }
 
   showChecked(): void {
-    this.history.forEach(n => this.changeProps(n, { checked: true }));
+    this.prevHistory.forEach(n => this.changeProps(n, { checked: false }));
+
+    this.intervalUtils.overArray(this.history, (historyItem) => {
+      historyItem.value.component?.shakeAnimation();
+      this.changeProps(historyItem, { checked: true });
+    }, 100);
   }
 
-  addNode(node: TreeNode<TreeNodeValue>): void {
+  addNode(node: TreeNodeAsComponent): void {
     this.currentNode.value?.addChild(node);
     this.depth.next(this.root.getDepth());
   }
@@ -121,7 +125,7 @@ export class NodeService {
     }
   }
 
-  getNextAvailableNodeAfterDeletion(removedNode: TreeNode<TreeNodeValue>): TreeNode<TreeNodeValue> {
+  getNextAvailableNodeAfterDeletion(removedNode: TreeNodeAsComponent): TreeNodeAsComponent {
     if (removedNode.parent) {
       if (removedNode.parent.children.length > 0) {
         return removedNode.parent.children[removedNode.parent.children.length - 1];
@@ -132,7 +136,7 @@ export class NodeService {
     }
   }
 
-  changeCurrentNode(node: TreeNode<TreeNodeValue>): void {
+  changeCurrentNode(node: TreeNodeAsComponent): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
       this.changeProps(currentNode, { current : !currentNode.value.props.current });

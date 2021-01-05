@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { NodeService, TreeNodeValue } from './node.service';
-import { TreeNode } from './node';
+import { NodeService, TreeNodeAsComponent } from './node.service';
 
 @Component({
   selector: 'app-root',
@@ -13,13 +12,4 @@ export class AppComponent {
 
   root = this.nodeService.root;
   depth = this.nodeService.depth;
-  current = this.nodeService.currentNode;
-
-  addNode(node: TreeNode<TreeNodeValue>): void {
-    this.nodeService.addNode(node);
-  }
-
-  removeNode(): void {
-    this.nodeService.removeNode();
-  }
 }

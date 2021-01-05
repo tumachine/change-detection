@@ -1,17 +1,21 @@
 <div
-  *ngIf="{ value: value$ | async } as async"
+  *ngIf="{ value: node.value$ | async } as async"
   class="node-info"
   (click)="click($event)"
 >
   <div
     #innerNode class="node-info-inner"
-    [ngClass]="{ 'node-info-current': async.value?.props?.current }"
+    [ngClass]="{ 'node-info-current': async.value?.props?.current, 'node-info-checked': async.value?.props?.checked }"
   >
-<!--    [ngClass]="{ 'node-info-current': async.value?.props?.current, 'node-info-checked': async.value?.props?.checked }"-->
-    {{ node.path[node.path.length - 1] }}<br>
+    {{ node.value.props.onPush ? 'OnPush' : 'Default' }}
+    {{ node.path }}<br>
     {{ async.value?.props?.current }}
   </div>
 </div>
 <div class="node-container" #containerEl>
-  <app-tree-node *ngFor="let nodeChild of children$ | async" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>
+  <ng-template ngFor let-nodeChild [ngForOf]="node.children$ | async">
+    <app-tree-node-on-push *ngIf="nodeChild.value.props.onPush" [setNode]="nodeChild" [height]="elHeight"></app-tree-node-on-push>
+    <app-tree-node *ngIf="!nodeChild.value.props.onPush" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>
+  </ng-template>
+<!--  <app-tree-node *ngFor="let nodeChild of children$ | async" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>-->
 </div>

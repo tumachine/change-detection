@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, EventEmitter, Output } from '@angular/core';
 import { TreeNode } from '../node';
-import { createTreeNodeComponent, NodeService, TreeNodeValue } from '../node.service';
+import { NodeService, TreeNodeAsComponent, TreeNodeValue } from '../node.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-control',
@@ -9,13 +10,14 @@ import { createTreeNodeComponent, NodeService, TreeNodeValue } from '../node.ser
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ControlComponent {
-  @Input()
-  currentNode!: TreeNode<TreeNodeValue> | null;
-
-  @Output()
-  removeNode = new EventEmitter<TreeNode<TreeNodeValue>>();
+  currentNode$ = this.nodeService.currentNode;
+  enableRecording$ = this.nodeService.enableRecording;
 
   constructor(private nodeService: NodeService) {}
+
+  toggleRecording(): void {
+    this.nodeService.toggleRecording();
+  }
 
   startRecording(): void {
     this.nodeService.startRecording();
@@ -34,7 +36,9 @@ export class ControlComponent {
   }
 
   add(): void {
-    this.nodeService.addNode(createTreeNodeComponent(null, [], []));
+    const node = new TreeNodeAsComponent();
+    node.setup(null, null, [], []);
+    this.nodeService.addNode(node);
   }
 
   remove(): void {

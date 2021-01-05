@@ -1,3 +1,4 @@
 <div class="tree-container" #treeContainer>
-  <app-tree-node [setNode]="rt" [height]="height"></app-tree-node>
+  <app-tree-node *ngIf="!rt.value.props.onPush" [setNode]="rt" [height]="height"></app-tree-node>
+  <app-tree-node-on-push *ngIf="rt.value.props.onPush" [setNode]="rt" [height]="height"></app-tree-node-on-push>
 </div>

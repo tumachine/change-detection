@@ -1,8 +1,16 @@
-<div class="control-container">
-  <div class="control-node-info" *ngIf="currentNode">
-    <div>{{ currentNode.path }}</div>
-    <div>{{ currentNode.getDepth() }}</div>
-    <div>{{ currentNode.value.props.current }}</div>
+<div
+  *ngIf="{
+    enableRecording: enableRecording$ | async,
+    currentNode: currentNode$ | async
+  } as async"
+  class="control-container"
+>
+  <div>Recoding: {{ async.enableRecording ? 'enabled' : 'disabled' }}</div>
+  <button (click)="toggleRecording()">{{ async.enableRecording ? 'ON' : 'OFF' }}</button>
+  <div class="control-node-info" *ngIf="async.currentNode">
+    <div>{{ async.currentNode.path }}</div>
+    <div>{{ async.currentNode.getDepth() }}</div>
+    <div>{{ async.currentNode.value.props.current }}</div>
     <button (click)="add()">Add</button>
     <button (click)="remove()">Remove</button>
 <!--    construct node settings-->
