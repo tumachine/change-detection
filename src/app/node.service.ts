@@ -42,6 +42,14 @@ export class TreeNodeAsComponent extends TreeNode<TreeNodeValue> {
   onChildrenChange(val: TreeNodeValue, children: TreeNodeAsComponent[]): void {
     this.children$.next(children);
   }
+
+  getProps(): TreeNodeValueProps {
+    return this.value.props;
+  }
+
+  changeProps(props: Partial<TreeNodeValueProps>): void {
+    this.changeValue({ props: { ...this.getProps(), ...props }});
+  }
 }
 
 @Injectable({
@@ -55,7 +63,7 @@ export class NodeService {
   currentNode = new BehaviorSubject<TreeNodeAsComponent | null>(null);
 
   enableRecording = new BehaviorSubject<boolean>(false);
-  record = false;
+  isRecording = false;
   intervalUtils = new IntervalUtils();
 
   constructor() {
@@ -72,43 +80,49 @@ export class NodeService {
     // });
   }
 
-  startRecording(): void {
-    this.intervalUtils.stop();
-    this.prevHistory = [ ...this.history];
-    this.history = [];
-    this.record = true;
-  }
-
-  onCheck(node: TreeNodeAsComponent): void {
-    if (this.record && this.enableRecording.value) {
-      this.history.push(node);
-    }
-  }
-
-  stopRecording(): void {
-    this.record = false;
-  }
-
   toggleRecording(): void {
     this.enableRecording.next(!this.enableRecording.value);
   }
 
   reset(): void {
-    this.history.forEach(n => this.changeProps(n, { checked: false }));
+    this.history.forEach(n => n.changeProps({ checked: false }));
     this.history = [];
   }
 
-  changeProps(node: TreeNodeAsComponent, props: Partial<TreeNodeValueProps>): void {
-    node.changeValue({ props: { ...node.value.props, ...props }});
+  showChecked(): void {
+    this.prevHistory.forEach(n => n.changeProps({ checked: false }));
+
+    if (this.history[0]?.value) {
+      this.intervalUtils.overArray(this.history, (historyItem) => {
+        historyItem.value.component?.animationShake?.player?.play();
+        historyItem.changeProps({ checked: true });
+      }, 100);
+    }
   }
 
-  showChecked(): void {
-    this.prevHistory.forEach(n => this.changeProps(n, { checked: false }));
+  record(onDone: () => void = () => {}): void {
+    this.startRecording();
+    setTimeout(() => {
+      this.stopRecording();
+      onDone();
+    }, 50);
+  }
 
-    this.intervalUtils.overArray(this.history, (historyItem) => {
-      historyItem.value.component?.shakeAnimation();
-      this.changeProps(historyItem, { checked: true });
-    }, 100);
+  private startRecording(): void {
+    this.intervalUtils.stop();
+    this.prevHistory = [ ...this.history];
+    this.history = [];
+    this.isRecording = true;
+  }
+
+  private stopRecording(): void {
+    this.isRecording = false;
+  }
+
+  onCheck(node: TreeNodeAsComponent): void {
+    if (this.isRecording && this.enableRecording.value) {
+      this.history.push(node);
+    }
   }
 
   addNode(node: TreeNodeAsComponent): void {
@@ -139,13 +153,13 @@ export class NodeService {
   changeCurrentNode(node: TreeNodeAsComponent): void {
     const currentNode = this.currentNode.value;
     if (currentNode === node) {
-      this.changeProps(currentNode, { current : !currentNode.value.props.current });
+      currentNode.changeProps({ current : !currentNode.getProps().current });
       this.currentNode.next(null);
     } else {
       if (currentNode) {
-        this.changeProps(currentNode, { current : !currentNode.value.props.current });
+        currentNode.changeProps({ current : !currentNode.getProps().current });
       }
-      this.changeProps(node, { current : !node.value.props.current });
+      node.changeProps({ current : !node.getProps().current });
       this.currentNode.next(node);
     }
   }

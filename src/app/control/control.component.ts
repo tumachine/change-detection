@@ -1,7 +1,5 @@
-import { ChangeDetectionStrategy, Component, Input, EventEmitter, Output } from '@angular/core';
-import { TreeNode } from '../node';
-import { NodeService, TreeNodeAsComponent, TreeNodeValue } from '../node.service';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { NodeService, TreeNodeAsComponent } from '../node.service';
 
 @Component({
   selector: 'app-control',
@@ -17,14 +15,6 @@ export class ControlComponent {
 
   toggleRecording(): void {
     this.nodeService.toggleRecording();
-  }
-
-  startRecording(): void {
-    this.nodeService.startRecording();
-  }
-
-  stopRecording(): void {
-    this.nodeService.stopRecording();
   }
 
   reset(): void {

@@ -1,17 +1,20 @@
 import {
   AfterContentChecked,
   AfterViewInit,
-  ChangeDetectionStrategy, ChangeDetectorRef,
+  ChangeDetectorRef,
   Component,
   ElementRef,
-  Input, OnDestroy, OnInit,
+  Input,
   Renderer2,
-  ViewChild, ViewRef,
+  ViewChild,
 } from '@angular/core';
 import { NodeService, TreeNodeAsComponent } from '../../node.service';
-import { animate, AnimationBuilder, state, style, transition, trigger } from '@angular/animations';
-import { NgControl } from '@angular/forms';
-import { ViewFlags } from '@angular/compiler/src/core';
+import { animate, AnimationBuilder, AnimationMetadata, AnimationPlayer, style } from '@angular/animations';
+
+interface CustomAnimation {
+  duration: number;
+  player: AnimationPlayer;
+}
 
 @Component({
   selector: 'app-tree-node',
@@ -26,6 +29,10 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   }
 
   node!: TreeNodeAsComponent;
+
+  // Animations
+  animationShake!: CustomAnimation;
+  animationDelete!: CustomAnimation;
 
   @Input()
   set height(h: number) {
@@ -51,6 +58,17 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
 
   ngAfterViewInit(): void {
     this.calculateStyling();
+
+    this.animationShake = this.createAnimationPlayer([
+      animate('0.1s', style({ transform: 'rotate(2deg)' })),
+      animate('0.1s', style({ transform: 'rotate(-2deg)' })),
+      animate('0.1s', style({ transform: 'rotate(2deg)' })),
+      animate('0.1s', style({ transform: 'rotate(0)' })),
+    ], 400);
+
+    this.animationDelete = this.createAnimationPlayer([
+      animate('0.5s', style({ 'flex-shrink': 0 }))
+    ], 500);
   }
 
   ngAfterContentChecked(): void {
@@ -74,29 +92,15 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
     this.cdRef.markForCheck();
   }
 
-  shakeAnimation(): void {
-    const animation = this.builder.build([
-      // style({ width: '100%'}),
-      // animate(200, style({ width: '0%' })),
-      // animate(200, style({ width: '100%' })),
-      animate('0.1s', style({ transform: 'rotate(2deg)' })),
-      animate('0.1s', style({ transform: 'rotate(-2deg)' })),
-      animate('0.1s', style({ transform: 'rotate(2deg)' })),
-      // animate('0.1s', style({ transform: 'rotate(0)', background: 'white' })),
-      animate('0.1s', style({ transform: 'rotate(0)' })),
-    ]);
-    const player = animation.create(this.innerNode.nativeElement);
-    player.play();
+  private createAnimationPlayer(metadata: AnimationMetadata | AnimationMetadata[], duration: number): CustomAnimation {
+    const player = this.builder.build(metadata).create(this.innerNode.nativeElement);
+    return { player, duration };
   }
 
   click(event: MouseEvent): void {
     this.nodeService.changeCurrentNode(this.node);
-    this.shakeAnimation();
-    this.nodeService.startRecording();
-    setTimeout(() => {
-      this.nodeService.stopRecording();
-      this.nodeService.showChecked();
-    }, 50);
+    this.animationShake.player.play();
+    this.nodeService.record(() => this.nodeService.showChecked());
   }
 
   calculateStyling(): void {

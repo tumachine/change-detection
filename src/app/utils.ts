@@ -9,6 +9,19 @@ export function deepClone<T>(obj: T): T {
 export class IntervalUtils {
   intervalId: number | null = null;
 
+  // overArray<T>(arr: T[], operation: (item: T) => void, intervalMs: number): void {
+  //   let counter = 0;
+  //   this.intervalId = setInterval(() => {
+  //     if (counter < arr.length) {
+  //       operation(arr[counter]);
+  //       counter++;
+  //     } else {
+  //       this.stop();
+  //       return;
+  //     }
+  //   }, intervalMs);
+  // }
+
   overArray<T>(arr: T[], operation: (item: T) => void, intervalMs: number): void {
     let counter = 0;
     this.intervalId = setInterval(() => {

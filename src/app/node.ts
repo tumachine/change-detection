@@ -1,5 +1,4 @@
 import { deepClone, randomInt } from './utils';
-import { TreeNodeValue } from './node.service';
 
 export class TreeNode<T> {
   parent: this | null = null;
@@ -56,7 +55,7 @@ export class TreeNode<T> {
   }
 
   createNode(parent: this | null = null, value: T | null = null, children: this[] = [], path: number[] = []): this {
-    const node = new (<any> this.constructor)() as this;
+    const node = new (this.constructor as any)() as this;
     node.setup(parent, value, children, path);
     return node;
   }
@@ -66,7 +65,7 @@ export class TreeNode<T> {
       return;
     }
     for (let i = 0; i < childrenNum; i++) {
-      const newChild = this.createNode(null, this.deepCloneValueFunc(this.defaultValue), [], []);
+      const newChild = this.createNode(null, this.deepCloneValueFunc(this.defaultValue));
       child.addChild(newChild);
     }
 
@@ -76,7 +75,7 @@ export class TreeNode<T> {
   removeChild(child: this): void {
     const childIndex = child.path[child.path.length - 1];
     this.children.splice(childIndex, 1);
-    this.nameChildren();
+    this.nameChildren(this, childIndex);
     this.onChildrenChange(this.value, this.children);
   }
 
@@ -86,11 +85,35 @@ export class TreeNode<T> {
 
   countNodes(): number {
     let amount = 1;
-    this.walkOverChildren(() => {
-      amount += 1;
-      return false;
-    });
+    this.walkOverDescendants(this.children, () => { amount += 1; });
     return amount;
+  }
+
+  getDescendants(node: this = this): this[] {
+    const descendants: this[] = [];
+    this.walkOverDescendants(node.children, (n => { descendants.push(n); }));
+    return descendants;
+  }
+
+  changeValue(val: Partial<T>): void {
+    this.value = { ...this.value, ...val };
+    this.onValueChange(this.value);
+  }
+
+  findNode(node: this): this | null {
+    if (this.path.length === node.path.length) {
+      return this;
+    }
+
+    if (this.path.length > node.path.length) {
+      return null;
+    }
+
+    let children = this.children;
+    for (let i = this.path.length; i < node.path.length - 1; i++) {
+      children = children[node.path[i]].children;
+    }
+    return children[node.path[node.path.length - 1]];
   }
 
   getRandomNode(): this {
@@ -101,20 +124,17 @@ export class TreeNode<T> {
 
     let counter = 0;
     let randomNode = this.createNode(null, this.deepCloneValueFunc(this.defaultValue), [], []);
-    this.walkOverChildren(n => {
-      counter++;
-      if (counter === randomNodeNum) {
-        randomNode = n;
-        return true;
-      }
-      return false;
-    });
+    this.walkOverDescendants(
+      this.children,
+      n => {
+        counter++;
+        if (counter === randomNodeNum) {
+          randomNode = n;
+          return true;
+        }
+        return false;
+      });
     return randomNode;
-  }
-
-  changeValue(val: Partial<T>): void {
-    this.value = { ...this.value, ...val };
-    this.onValueChange(this.value);
   }
 
   private copyNode(node: this): this {
@@ -141,13 +161,16 @@ export class TreeNode<T> {
     });
   }
 
+  // we need different ways of walking over children
+  // horizontal up
+  // need to stop and operation
   // on operation true, stop walking
-  private walkOverChildren(needToStopFn: (n: this) => boolean, nodes: this[] = this.children): void {
+  private walkOverDescendants(nodes: this[] = this.children, needToStopFn: (n: this) => boolean | void): void {
     nodes.forEach(n => {
-      if (needToStopFn(n)) {
+      if (needToStopFn(n) === true) {
         return;
       }
-      this.walkOverChildren(needToStopFn, n.children);
+      this.walkOverDescendants(n.children, needToStopFn);
     });
   }
 
@@ -169,12 +192,12 @@ export class TreeNode<T> {
   }
 
   private checkNodeChildren(node: this): boolean {
-    // @ts-ignore
-    node.children.forEach((child, i) => {
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
       if (!this.checkNode(node, i) || !this.checkNodeChildren(child)) {
         return false;
       }
-    });
+    }
     return true;
   }
 
@@ -186,21 +209,5 @@ export class TreeNode<T> {
       console.error(`INCORRECT PATH: ${parent.path[childIndex]}, SHOULD BE: ${correctPath}`);
     }
     return samePaths;
-  }
-
-  findNode(node: this): this | null {
-    if (this.path.length === node.path.length) {
-      return this;
-    }
-
-    if (this.path.length > node.path.length) {
-      return null;
-    }
-
-    let children = this.children;
-    for (let i = this.path.length; i < node.path.length - 1; i++) {
-      children = children[node.path[i]].children;
-    }
-    return children[node.path[node.path.length - 1]];
   }
 }
