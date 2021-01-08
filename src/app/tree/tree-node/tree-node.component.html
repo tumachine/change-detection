@@ -4,18 +4,21 @@
   (click)="click($event)"
 >
   <div
-    #innerNode class="node-info-inner"
-    [ngClass]="{ 'node-info-current': async.value?.props?.current, 'node-info-checked': async.value?.props?.checked }"
+    #innerNode
+    class="node-info-inner"
+    [ngStyle]="styleState.background"
   >
-    {{ node.value.props.onPush ? 'OnPush' : 'Default' }}
-    {{ node.path }}<br>
-    {{ async.value?.props?.current }}
+    <div
+      class="node-info-inner-foreground"
+      [ngStyle]="styleState.foreground"
+    >
+      {{ node.value.props.onPush ? 'PUSH' : '' }}
+    </div>
   </div>
 </div>
-<div class="node-container" #containerEl>
+<div class="node-container">
   <ng-template ngFor let-nodeChild [ngForOf]="node.children$ | async">
     <app-tree-node-on-push *ngIf="nodeChild.value.props.onPush" [setNode]="nodeChild" [height]="elHeight"></app-tree-node-on-push>
     <app-tree-node *ngIf="!nodeChild.value.props.onPush" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>
   </ng-template>
-<!--  <app-tree-node *ngFor="let nodeChild of children$ | async" [setNode]="nodeChild" [height]="elHeight"></app-tree-node>-->
 </div>

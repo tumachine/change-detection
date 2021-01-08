@@ -34,4 +34,8 @@ export class ControlComponent {
   remove(): void {
     this.nodeService.removeNode();
   }
+
+  toggleDetectionMethod(): void {
+    this.nodeService.toggleDetectionMethod(true);
+  }
 }

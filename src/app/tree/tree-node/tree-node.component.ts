@@ -8,13 +8,32 @@ import {
   Renderer2,
   ViewChild,
 } from '@angular/core';
-import { NodeService, TreeNodeAsComponent } from '../../node.service';
-import { animate, AnimationBuilder, AnimationMetadata, AnimationPlayer, style } from '@angular/animations';
+import { NodeService, TreeNodeAsComponent, TreeNodeValueProps } from '../../node.service';
+import {
+  animate,
+  AnimationBuilder,
+  AnimationMetadata,
+  AnimationPlayer, group, query,
+  style,
+} from '@angular/animations';
+import { createRepeatingLine } from '../../utils';
 
 interface CustomAnimation {
   duration: number;
   player: AnimationPlayer;
 }
+
+const treeNodeBackgroundStyles = {
+  onPush: { background: '#41B619' },
+  default: { background: '#0351C1' },
+};
+
+const treeNodeForegroundStyles = {
+  none: { background: 'transparent' },
+  current: { background: createRepeatingLine(45, 35, 'transparent', 'white') },
+  checkedOnPush: { background: createRepeatingLine(45, 35, 'transparent', '#70E852') },
+  checkedDefault: { background: createRepeatingLine(45, 35, 'transparent', '#5199FF') },
+};
 
 @Component({
   selector: 'app-tree-node',
@@ -26,13 +45,23 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   set setNode(node: TreeNodeAsComponent) {
     this.node = node;
     this.node.value.component = this;
+    this.setNodeStyle(this.node.value.props);
+    this.node.value$.subscribe(v => this.setNodeStyle(v.props));
   }
+
+  styleState = {
+    background: {},
+    foreground: {},
+  };
 
   node!: TreeNodeAsComponent;
 
   // Animations
   animationShake!: CustomAnimation;
   animationDelete!: CustomAnimation;
+  animationDeleteShrink!: CustomAnimation;
+  animationChangeOnPush!: CustomAnimation;
+  animationChangeDefault!: CustomAnimation;
 
   @Input()
   set height(h: number) {
@@ -41,9 +70,6 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   }
 
   elHeight!: number;
-
-  @ViewChild('containerEl')
-  containerEl!: ElementRef;
 
   @ViewChild('innerNode')
   innerNode!: ElementRef;
@@ -59,15 +85,26 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   ngAfterViewInit(): void {
     this.calculateStyling();
 
-    this.animationShake = this.createAnimationPlayer([
+    this.animationShake = this.createAnimationPlayer(this.innerNode, [
       animate('0.1s', style({ transform: 'rotate(2deg)' })),
       animate('0.1s', style({ transform: 'rotate(-2deg)' })),
       animate('0.1s', style({ transform: 'rotate(2deg)' })),
       animate('0.1s', style({ transform: 'rotate(0)' })),
     ], 400);
 
-    this.animationDelete = this.createAnimationPlayer([
-      animate('0.5s', style({ 'flex-shrink': 0 }))
+    this.animationDeleteShrink = this.createAnimationPlayer(this.elRef, [
+      group([
+        animate('0.4s', style({ 'flex-grow': 0, transform: 'rotate(180deg)', opacity: 0 })),
+        query('.node-info-inner-foreground', animate('0.4s', style({ background: 'red' }))),
+      ])
+    ], 500);
+
+    this.animationChangeOnPush = this.createAnimationPlayer(this.innerNode, [
+      animate('0.5s', style({ transform: 'rotate(360deg)', ...treeNodeBackgroundStyles.onPush })),
+    ], 500);
+
+    this.animationChangeDefault = this.createAnimationPlayer(this.innerNode, [
+      animate('0.5s', style({ transform: 'rotate(360deg)', ...treeNodeBackgroundStyles.default })),
     ], 500);
   }
 
@@ -75,25 +112,35 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
     this.nodeService.onCheck(this.node);
   }
 
-  onRemove(): void {
-    const animation = this.builder.build([
-      style({ 'flex-grow': 1}),
-      animate(200, style({ 'flex-grow': 0 }))
-    ]);
-    const player = animation.create(this.elRef.nativeElement);
-    player.play();
+  setNodeStyle(props: TreeNodeValueProps): void {
+    this.calculateBackground(props);
+    this.calculateForeground(props);
   }
 
-  onCurrentChange(value: string): void {
-    this.renderer.setStyle(this.elRef.nativeElement, 'flex', value);
+  calculateForeground(props: TreeNodeValueProps): any {
+    let foregroundStyle = treeNodeForegroundStyles.none;
+    if (props.current) {
+      foregroundStyle = treeNodeForegroundStyles.current;
+    } else if (props.checked) {
+      if (props.onPush) {
+        foregroundStyle = treeNodeForegroundStyles.checkedOnPush;
+      } else {
+        foregroundStyle = treeNodeForegroundStyles.checkedDefault;
+      }
+    }
+    this.styleState.foreground = foregroundStyle;
+  }
+
+  calculateBackground(props: TreeNodeValueProps): void {
+    this.styleState.background = props.onPush ? treeNodeBackgroundStyles.onPush : treeNodeBackgroundStyles.default;
   }
 
   markForCheck(): void {
     this.cdRef.markForCheck();
   }
 
-  private createAnimationPlayer(metadata: AnimationMetadata | AnimationMetadata[], duration: number): CustomAnimation {
-    const player = this.builder.build(metadata).create(this.innerNode.nativeElement);
+  private createAnimationPlayer(element: ElementRef, metadata: AnimationMetadata | AnimationMetadata[], duration: number): CustomAnimation {
+    const player = this.builder.build(metadata).create(element.nativeElement);
     return { player, duration };
   }
 
@@ -106,10 +153,6 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   calculateStyling(): void {
     if (this.elRef) {
       this.renderer.setStyle(this.elRef.nativeElement, 'height', `${this.elHeight}px`);
-    }
-
-    if (this.containerEl) {
-      this.renderer.setStyle(this.containerEl.nativeElement, 'margin-top', `${this.elHeight}px`);
     }
   }
 }

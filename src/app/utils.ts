@@ -6,27 +6,19 @@ export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
+export function createRepeatingLine(degrees: number, lineWidth: number, firstColor: string, secondColor: string): string {
+  return `repeating-linear-gradient(45deg, ${firstColor}, ${firstColor} ${lineWidth}px, ${secondColor} ${lineWidth}px, ${secondColor} ${lineWidth * 2}px)`;
+}
+
+
 export class IntervalUtils {
   intervalId: number | null = null;
 
-  // overArray<T>(arr: T[], operation: (item: T) => void, intervalMs: number): void {
-  //   let counter = 0;
-  //   this.intervalId = setInterval(() => {
-  //     if (counter < arr.length) {
-  //       operation(arr[counter]);
-  //       counter++;
-  //     } else {
-  //       this.stop();
-  //       return;
-  //     }
-  //   }, intervalMs);
-  // }
-
-  overArray<T>(arr: T[], operation: (item: T) => void, intervalMs: number): void {
+  overArray<T>(arr: T[], operation: (item: T, index: number) => void, intervalMs: number): void {
     let counter = 0;
     this.intervalId = setInterval(() => {
       if (counter < arr.length) {
-        operation(arr[counter]);
+        operation(arr[counter], counter);
         counter++;
       } else {
         this.stop();

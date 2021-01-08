@@ -108,6 +108,27 @@ export class NodeService {
     }, 50);
   }
 
+  toggleDetectionMethod(changeChildren: boolean): void {
+    if (this.currentNode.value) {
+      const toggleOnPush = !this.currentNode.value?.getProps().onPush;
+      // this.currentNode.value.changeProps({ onPush: toggleOnPush });
+      const descendants = this.currentNode.value.getDescendants().reverse();
+      descendants.push(this.currentNode.value);
+      this.intervalUtils.overArray(
+        descendants,
+        (desc, i) => {
+          const customAnimation = toggleOnPush ? desc.value.component?.animationChangeOnPush : desc.value.component?.animationChangeDefault;
+
+          customAnimation?.player.play();
+          customAnimation?.player.onDone(() => {
+            if (desc?.parent) {
+              desc.changeProps({ onPush: toggleOnPush });
+            }
+          });
+        }, 100);
+    }
+  }
+
   private startRecording(): void {
     this.intervalUtils.stop();
     this.prevHistory = [ ...this.history];
@@ -133,9 +154,23 @@ export class NodeService {
   removeNode(): void {
     const node = this.currentNode.value;
     if (node && node?.parent) {
-      node.parent.removeChild(node);
-      this.changeCurrentNode(this.getNextAvailableNodeAfterDeletion(node));
-      this.depth.next(this.root.getDepth());
+      const descendants = node.getDescendants().reverse();
+      descendants.push(node);
+      this.intervalUtils.overArray(
+        descendants,
+        (desc, i) => {
+
+          desc.value.component?.animationDeleteShrink.player.play();
+          if (i === descendants.length - 1) {
+              desc.value.component?.animationDeleteShrink.player.onDone(() => {
+                if (desc?.parent) {
+                  desc.parent.removeChild(desc);
+                  this.changeCurrentNode(this.getNextAvailableNodeAfterDeletion(desc));
+                  this.depth.next(this.root.getDepth());
+                }
+            });
+          }
+        }, 100);
     }
   }
 
