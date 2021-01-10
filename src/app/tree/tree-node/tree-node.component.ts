@@ -16,7 +16,7 @@ import {
   AnimationPlayer, group, query,
   style,
 } from '@angular/animations';
-import { createRepeatingLine } from '../../utils';
+import { createRepeatingLine } from '../../utils/utils';
 
 interface CustomAnimation {
   duration: number;
@@ -24,15 +24,19 @@ interface CustomAnimation {
 }
 
 const treeNodeBackgroundStyles = {
-  onPush: { background: '#41B619' },
-  default: { background: '#0351C1' },
+  onPush: { background: '#41B619', color: '#1E3C00' },
+  default: { background: '#5199FF', color: '#002D6D' },
 };
 
 const treeNodeForegroundStyles = {
   none: { background: 'transparent' },
-  current: { background: createRepeatingLine(45, 35, 'transparent', 'white') },
-  checkedOnPush: { background: createRepeatingLine(45, 35, 'transparent', '#70E852') },
-  checkedDefault: { background: createRepeatingLine(45, 35, 'transparent', '#5199FF') },
+  current: {
+    background: createRepeatingLine(45, 35, 'transparent', 'white'),
+    'font-size': '25px',
+    border: 'solid #231F20 5px',
+  },
+  checkedOnPush: { background: createRepeatingLine(45, 35, 'transparent', '#008736') },
+  checkedDefault: { background: createRepeatingLine(45, 35, 'transparent', '#1771F1') },
 };
 
 @Component({
@@ -60,6 +64,7 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
   animationShake!: CustomAnimation;
   animationDelete!: CustomAnimation;
   animationDeleteShrink!: CustomAnimation;
+  animationAddNode!: CustomAnimation;
   animationChangeOnPush!: CustomAnimation;
   animationChangeDefault!: CustomAnimation;
 
@@ -94,9 +99,14 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
 
     this.animationDeleteShrink = this.createAnimationPlayer(this.elRef, [
       group([
-        animate('0.4s', style({ 'flex-grow': 0, transform: 'rotate(180deg)', opacity: 0 })),
-        query('.node-info-inner-foreground', animate('0.4s', style({ background: 'red' }))),
+        animate('0.5s', style({ 'flex-grow': 0, transform: 'rotate(180deg)', opacity: 0 })),
+        query('.node-info-inner-foreground', animate('0.2s', style({ background: 'red' }))),
       ])
+    ], 500);
+
+    this.animationAddNode = this.createAnimationPlayer(this.elRef, [
+      animate('0s', style({ 'flex-grow': 0 })),
+      animate('0.5s', style({ 'flex-grow': 1 })),
     ], 500);
 
     this.animationChangeOnPush = this.createAnimationPlayer(this.innerNode, [
@@ -106,6 +116,11 @@ export class TreeNodeComponent implements AfterViewInit, AfterContentChecked {
     this.animationChangeDefault = this.createAnimationPlayer(this.innerNode, [
       animate('0.5s', style({ transform: 'rotate(360deg)', ...treeNodeBackgroundStyles.default })),
     ], 500);
+
+    if (this.node.value.props.new) {
+      this.node.value.props.new = false;
+      this.animationAddNode.player.play();
+    }
   }
 
   ngAfterContentChecked(): void {

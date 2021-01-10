@@ -1,4 +1,4 @@
-import { deepClone, randomInt } from './utils';
+import { deepClone, randomInt } from './utils/utils';
 
 export class TreeNode<T> {
   parent: this | null = null;

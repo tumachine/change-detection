@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, interval } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { TreeNode } from './node';
 import { TreeNodeComponent } from './tree/tree-node/tree-node.component';
-import { deepClone, IntervalUtils } from './utils';
+import { deepClone, IntervalUtils } from './utils/utils';
 
 export interface TreeNodeValueProps {
+  new: boolean;
   current: boolean;
   checked: boolean;
   onPush: boolean;
@@ -22,6 +23,7 @@ export class TreeNodeAsComponent extends TreeNode<TreeNodeValue> {
   defaultValue = {
     component: null,
     props: {
+      new: false,
       current: false,
       checked: false,
       onPush: true,
@@ -108,24 +110,24 @@ export class NodeService {
     }, 50);
   }
 
-  toggleDetectionMethod(changeChildren: boolean): void {
+  toggleDetectionMethodWithChildren(): void {
+    this.intervalUtils.stop();
     if (this.currentNode.value) {
-      const toggleOnPush = !this.currentNode.value?.getProps().onPush;
-      // this.currentNode.value.changeProps({ onPush: toggleOnPush });
       const descendants = this.currentNode.value.getDescendants().reverse();
       descendants.push(this.currentNode.value);
-      this.intervalUtils.overArray(
-        descendants,
-        (desc, i) => {
-          const customAnimation = toggleOnPush ? desc.value.component?.animationChangeOnPush : desc.value.component?.animationChangeDefault;
+      this.intervalUtils.overArray(descendants, (desc, i) => { this.toggleDetectionMethod(desc); }, 100);
+    }
+  }
 
-          customAnimation?.player.play();
-          customAnimation?.player.onDone(() => {
-            if (desc?.parent) {
-              desc.changeProps({ onPush: toggleOnPush });
-            }
-          });
-        }, 100);
+  toggleDetectionMethod(node: TreeNodeAsComponent | null = this.currentNode.value): void {
+    if (node) {
+      const toggleOnPush = !node.getProps().onPush;
+      const customAnimation = toggleOnPush ? node.value.component?.animationChangeOnPush : node.value.component?.animationChangeDefault;
+
+      customAnimation?.player.play();
+      customAnimation?.player.onDone(() => {
+        node.changeProps({ onPush: toggleOnPush });
+      });
     }
   }
 
@@ -147,6 +149,7 @@ export class NodeService {
   }
 
   addNode(node: TreeNodeAsComponent): void {
+    node.value.props.new = true;
     this.currentNode.value?.addChild(node);
     this.depth.next(this.root.getDepth());
   }
@@ -161,15 +164,13 @@ export class NodeService {
         (desc, i) => {
 
           desc.value.component?.animationDeleteShrink.player.play();
-          if (i === descendants.length - 1) {
-              desc.value.component?.animationDeleteShrink.player.onDone(() => {
-                if (desc?.parent) {
-                  desc.parent.removeChild(desc);
-                  this.changeCurrentNode(this.getNextAvailableNodeAfterDeletion(desc));
-                  this.depth.next(this.root.getDepth());
-                }
-            });
-          }
+          desc.value.component?.animationDeleteShrink.player.onDone(() => {
+            if (desc?.parent) {
+              desc.parent.removeChild(desc);
+              this.changeCurrentNode(this.getNextAvailableNodeAfterDeletion(desc));
+              this.depth.next(this.root.getDepth());
+            }
+          });
         }, 100);
     }
   }

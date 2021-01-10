@@ -36,6 +36,10 @@ export class ControlComponent {
   }
 
   toggleDetectionMethod(): void {
-    this.nodeService.toggleDetectionMethod(true);
+    this.nodeService.toggleDetectionMethod();
+  }
+
+  toggleDetectionWithChildren(): void {
+    this.nodeService.toggleDetectionMethodWithChildren();
   }
 }

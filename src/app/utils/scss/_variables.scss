@@ -1,0 +1,13 @@
+$change-on-push: #41B619;
+$change-on-push-secondary: #1E3C00;
+
+$change-default: #5199FF;
+$change-default-secondary: #002D6D;
+
+:export {
+  changeOnPush: $change-on-push;
+  changeOnPushSecondary: $change-on-push-secondary;
+
+  changeDefault: $change-default;
+  changeDefaultSecondary: $change-default-secondary;
+}

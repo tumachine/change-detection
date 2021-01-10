@@ -1,9 +1,72 @@
+@import "../utils/scss/variables";
+
 .control-container {
   height: 100vh;
   width: 400px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: start;
+  padding: 5px;
   background: grey;
-  padding: 30px;
+}
+
+.control-element {
+  width: 100%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 30px;
+  display: flex;
+  flex-direction: column;
+  border: solid 2px black;
+  margin-bottom: 20px;
+}
+
+.control-element-item {
+  font-size: 30px;
+  background:  #414042;
+  color: #D1D3D4;
+  padding: 10px 0;
+}
+
+.recording-button {
+  padding: 20px 10px;
+  border: none;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.padding-x {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.on {
+  background-color: #41B619;
+}
+
+.off {
+  background-color: #BC0022;
+}
+
+.change-default {
+  background-color: $change-default;
+}
+
+.change-on-push {
+  background-color: $change-on-push;
+}
+
+.button-group-row {
+  display: flex;
+  flex-direction: row;
+
+  button {
+    width: 100%;
+    margin: 2px 1px;
+    padding: 5px;
+    font-size: 20px;
+    border: none;
+  }
 }

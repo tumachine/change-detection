@@ -5,18 +5,42 @@
   } as async"
   class="control-container"
 >
-  <div>Recoding: {{ async.enableRecording ? 'enabled' : 'disabled' }}</div>
-  <button (click)="toggleRecording()">{{ async.enableRecording ? 'ON' : 'OFF' }}</button>
-  <div class="control-node-info" *ngIf="async.currentNode">
-    <div>{{ async.currentNode.path }}</div>
-    <div>{{ async.currentNode.getDepth() }}</div>
-    <div>{{ async.currentNode.value.props.current }}</div>
-    <button (click)="toggleDetectionMethod()">toggle detection method</button>
-    <button (click)="add()">Add</button>
-    <button (click)="remove()">Remove</button>
-<!--    construct node settings-->
+  <div class="control-element">
+    <div class="control-element-item">Recording</div>
+    <button
+      class="control-element-item recording-button"
+      (click)="toggleRecording()"
+      [ngClass]="async.enableRecording ? 'on' : 'off'"
+    >
+      {{ async.enableRecording ? 'ON' : 'OFF' }}
+    </button>
   </div>
-  <button (click)="colorHistory()">Color history</button>
-  <button (click)="reset()">Reset</button>
+  <div *ngIf="async.currentNode" class="control-element padding-x">
+    <div>Node</div>
+    <div class="control-element" *ngIf="async.currentNode.value$ | async as value">
+      <div class="control-element-item">Detection Method</div>
+      <div
+        class="control-element-item"
+        [ngClass]="value.props.onPush ? 'change-on-push' : 'change-default'"
+      >{{ value.props.onPush ? 'OnPush' : 'Default' }}</div>
+      <div class="button-group-row">
+        <button (click)="toggleDetectionMethod()">Toggle</button>
+        <button (click)="toggleDetectionWithChildren()">Toggle with children</button>
+      </div>
+    </div>
+    <div class="control-element">
+      <div class="control-element-item">Controls</div>
+      <div class="button-group-row">
+        <button class="on" (click)="add()">Add</button>
+        <button class="off" (click)="remove()">Remove</button>
+      </div>
+    </div>
+
+    <div class="control-element">
+      <div class="control-element-item">Info</div>
+      <div>{{ async.currentNode.path }}</div>
+      <div>{{ async.currentNode.getDepth() }}</div>
+      <!--    construct node settings-->
+    </div>
 </div>
 
